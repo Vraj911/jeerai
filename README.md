@@ -1,73 +1,198 @@
-# Welcome to your Lovable project
+# Jeera2
 
-## Project info
+**Enterprise project management application** — A frontend-only Jira-inspired system built with modern React, TypeScript, and enterprise-grade architecture.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## What is Jeera2?
 
-There are several ways of editing your application.
+Jeera2 is a **frontend-only** project management app modeled on Jira's information architecture. It provides:
 
-**Use Lovable**
+- **Workspace** → **Projects** → **Boards/Backlog** → **Issues** hierarchy
+- Kanban board with drag-and-drop
+- Issue tracking, comments, activity feed
+- AI-assisted productivity (suggestions only — user confirms)
+- Analytics, automation rules (UI), notifications
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+**No backend yet.** All data comes from `lib/mockAdapter.ts`. Backend integration will replace this single file later.
 
-Changes made via Lovable will be committed automatically to this repo.
+---
 
-**Use your preferred IDE**
+## Quick Start
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Open [http://localhost:8080](http://localhost:8080). You land on the Dashboard.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Architecture at a Glance
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+UI Layer (presentational components)
+    ↓
+View Layer (pages, feature components)
+    ↓
+State Layer (TanStack Query + Zustand)
+    ↓
+API Contract Layer (src/api/*)
+    ↓
+Mock Adapter (lib/mockAdapter.ts)
+```
 
-## What technologies are used for this project?
+### State Rules (Non-Negotiable)
 
-This project is built with:
+| Data Type | Store | Purpose |
+|-----------|-------|---------|
+| Server data (issues, projects, etc.) | **TanStack Query** | Caching, fetching, mutations |
+| UI state (sidebar, modals, theme) | **Zustand** | Local behavior, persisted where needed |
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Never mix: server truth lives in Query; UI behavior in Zustand.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Project Structure
 
-## Can I connect a custom domain to my Lovable project?
+```
+src/
+├── main.tsx              # React entry
+├── App.tsx               # Providers (Theme, Query, Router)
+├── app/                  # Bootstrap
+│   ├── providers/        # QueryProvider, ThemeProvider, RouterProvider
+│   └── config/           # queryClient, env
+├── routes/               # AppRouter, routeConstants, ProtectedRoute
+├── layouts/              # RootLayout, AuthLayout, AppLayout, ProjectLayout
+├── pages/                # Route-level containers only (no business logic)
+├── features/             # Domain modules (issues, projects, automation, etc.)
+├── components/
+│   ├── ui/               # Pure primitives (Button, Input, Card, etc.)
+│   ├── layout/           # Sidebar, Topbar, CommandPalette, PageContainer
+│   └── shared/           # Avatar, EmptyState, StatusIndicator
+├── queries/              # TanStack Query hooks (useIssues, useProjects, etc.)
+├── api/                  # HTTP contracts (issue.api, project.api, etc.)
+├── store/                # Zustand (ui.store, theme.store, command.store)
+├── hooks/                # useDebounce, useKeyboardShortcut, useMediaQuery
+├── types/                # Data contracts (issue, project, user, etc.)
+├── lib/
+│   ├── mockAdapter.ts    # All mock data — single swap point for backend
+│   ├── constants.ts
+│   └── utils.ts
+└── styles/               # globals.css, theme.css
+```
 
-Yes, you can!
+---
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Key Concepts
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### 1. Mock Data
+
+All mock responses live in `lib/mockAdapter.ts`:
+
+- `mockUsers`, `mockProjects`, `mockIssues`, `mockSprints`
+- `mockComments`, `mockActivities`, `mockNotifications`
+- `mockAutomationRules`
+
+**No inline mock objects in components.** API layer consumes the adapter.
+
+### 2. Routing
+
+Routes are defined in `routes/routeConstants.ts`. Use `ROUTES.*` — no hardcoded paths.
+
+| Area | Example |
+|------|---------|
+| Auth | `/auth/login`, `/auth/signup` |
+| Workspace | `/app/dashboard`, `/app/projects`, `/app/members` |
+| Project | `/app/projects/:projectId/board`, `.../backlog`, `.../analytics` |
+| Issue | `/app/issues/:issueId` (full page, never modal) |
+
+### 3. Layouts
+
+- **RootLayout** — Theme, error boundary, global listeners
+- **AppLayout** — Sidebar + Topbar shell (persistent)
+- **ProjectLayout** — Project tabs (Overview, Board, Backlog, etc.)
+- **AuthLayout** — Centered auth forms
+
+### 4. Global Features
+
+| Feature | Trigger | Purpose |
+|---------|---------|---------|
+| **Global Search** | `/` or click search | Search issues, projects, members (inline dropdown) |
+| **Command Palette** | `Cmd+K` / `Ctrl+K` | Navigate, create issue, switch context |
+| **Create Issue** | `C` or "+ Create" | Opens issue creation modal |
+| **Theme Toggle** | Topbar icon | Light/dark (instant, no animation) |
+
+### 5. Toast System
+
+- **Library:** shadcn toast (Radix)
+- **Position:** Bottom-right
+- **Max visible:** 3
+- **Auto-dismiss:** 3 seconds
+- **Types:** success, error, info
+
+---
+
+## Tech Stack
+
+| Category | Choice |
+|----------|--------|
+| Framework | React 18+ |
+| Language | TypeScript (strict mode) |
+| Bundler | Vite |
+| Styling | Tailwind CSS + shadcn/ui |
+| Server state | TanStack Query |
+| UI state | Zustand |
+| Charts | Recharts |
+| Icons | lucide-react |
+| Animations | Framer Motion (limited) |
+
+---
+
+## Design Philosophy
+
+- **Industrial enterprise UI** — Dense, readable, Jira-like
+- **Neutral palette** — White/grey hierarchy, muted blue accent
+- **Borders over shadows** — Subtle separation
+- **No gradients, glassmorphism, or neon**
+- **Animations** — State change only, ≤250ms, no bounce/parallax
+
+---
+
+## For Developers
+
+### Adding a New Page
+
+1. Create page in `pages/` (e.g. `pages/workspace/NewPage.tsx`)
+2. Add route in `routes/AppRouter.tsx` and `routeConstants.ts`
+3. Add nav item in `Sidebar.tsx` if needed
+
+### Adding a New API Endpoint
+
+1. Add function in `api/*.api.ts`
+2. Consume `mockAdapter` for data
+3. Create TanStack Query hook in `queries/*.queries.ts`
+4. Use the hook in pages/features — never call API directly from UI
+
+### Backend Integration (Future)
+
+Replace `lib/mockAdapter.ts` usage in `api/*` with real HTTP calls via `api/client.ts`. UI and state layer stay the same.
+
+---
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start dev server (port 8080) |
+| `npm run build` | Production build |
+| `npm run preview` | Preview production build |
+| `npm run lint` | Run ESLint |
+| `npm run test` | Run Vitest |
+
+---
+
+## License
+
+Private — Enterprise use.
