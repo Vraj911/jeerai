@@ -1,7 +1,8 @@
-import { mockActivities as initialActivities, mockUsers, mockIssues } from '@/lib/mockAdapter';
+import { mockActivities, mockUsers } from '@/lib/mockAdapter';
 import type { Activity } from '@/types/activity';
+import type { Issue } from '@/types/issue';
 
-let activities = [...initialActivities];
+const activities = mockActivities;
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -10,9 +11,9 @@ function delay(ms: number): Promise<void> {
 export const activityApi = {
   getAll: async (): Promise<Activity[]> => {
     await delay(200);
-    return [...activities].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return activities
+      .slice()
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
   getByProject: async (projectId: string): Promise<Activity[]> => {
@@ -22,31 +23,30 @@ export const activityApi = {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   },
 
-  add: (activity: Omit<Activity, 'id'>): void => {
+  add: (activity: Omit<Activity, 'id'>): Activity => {
     const newActivity: Activity = {
       ...activity,
       id: `act-${Date.now()}`,
     };
-    activities = [newActivity, ...activities];
+    activities.unshift(newActivity);
+    return newActivity;
   },
 
-  simulateRandomEvent: (): void => {
-    const issue = mockIssues[Math.floor(Math.random() * mockIssues.length)];
-    const actor = mockUsers[Math.floor(Math.random() * mockUsers.length)];
-    const types: Array<{ type: Activity['type']; detail: string }> = [
-      { type: 'status_changed', detail: 'Changed status' },
-      { type: 'assigned', detail: `Assigned to ${actor.name}` },
-      { type: 'commented', detail: 'Added a comment' },
-      { type: 'issue_created', detail: 'Created issue' },
+  addFromIssueUpdate: (issue: Issue, randomValue: number): Activity => {
+    const actor = mockUsers[Math.floor(randomValue * mockUsers.length) % mockUsers.length];
+    const templates: Array<{ type: Activity['type']; detail: string }> = [
+      { type: 'status_changed', detail: `Updated status on ${issue.key}` },
+      { type: 'assigned', detail: `Reassigned ${issue.key}` },
+      { type: 'commented', detail: `Commented on ${issue.key}` },
     ];
-    const chosen = types[Math.floor(Math.random() * types.length)];
-    activityApi.add({
-      type: chosen.type,
+    const selected = templates[Math.floor(randomValue * templates.length) % templates.length];
+    return activityApi.add({
+      type: selected.type,
       actor,
       targetId: issue.id,
       targetKey: issue.key,
       targetTitle: issue.title,
-      detail: chosen.detail,
+      detail: selected.detail,
       createdAt: new Date().toISOString(),
       projectId: issue.projectId,
     });

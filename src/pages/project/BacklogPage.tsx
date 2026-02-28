@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useIssues } from '@/queries/issue.queries';
@@ -68,6 +68,23 @@ function BacklogGroup({
   onIssueClick: (id: string) => void;
 }) {
   const [open, setOpen] = useState(true);
+  const [scrollTop, setScrollTop] = useState(0);
+  const rowHeight = 34;
+  const viewportHeight = 280;
+  const overscan = 6;
+
+  const windowed = useMemo(() => {
+    const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
+    const visibleCount = Math.ceil(viewportHeight / rowHeight) + overscan * 2;
+    const end = Math.min(issues.length, start + visibleCount);
+    return {
+      start,
+      end,
+      visible: issues.slice(start, end),
+      topSpacer: start * rowHeight,
+      bottomSpacer: Math.max(0, (issues.length - end) * rowHeight),
+    };
+  }, [issues, scrollTop]);
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -77,8 +94,12 @@ function BacklogGroup({
         <span className="text-xs text-muted-foreground ml-auto">{issues.length} issues</span>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className="ml-6 space-y-px">
-          {issues.map((issue) => (
+        <div
+          className="ml-6 space-y-px max-h-[280px] overflow-auto"
+          onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
+        >
+          <div style={{ height: windowed.topSpacer }} />
+          {windowed.visible.map((issue) => (
             <div
               key={issue.id}
               onClick={() => onIssueClick(issue.id)}
@@ -94,6 +115,7 @@ function BacklogGroup({
               )}
             </div>
           ))}
+          <div style={{ height: windowed.bottomSpacer }} />
           {issues.length === 0 && (
             <p className="text-xs text-muted-foreground py-3 px-2">No issues in this group.</p>
           )}

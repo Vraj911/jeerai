@@ -1,13 +1,20 @@
+import { useEffect } from 'react';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useActivities } from '@/queries/activity.queries';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/routes/routeConstants';
 import { format } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useUIStore } from '@/store/ui.store';
 
 export default function ActivityPage() {
   const navigate = useNavigate();
   const { data: activities = [], isLoading } = useActivities();
+  const { setActivityPulse } = useUIStore();
+
+  useEffect(() => {
+    setActivityPulse(false);
+  }, [setActivityPulse]);
 
   if (isLoading) {
     return (

@@ -1,9 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
+import { useNotificationStore } from '@/store/notification.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { APP_NAME, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants';
-import { mockNotifications } from '@/lib/mockAdapter';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -15,40 +15,34 @@ import {
   Users,
   Settings,
 } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   path: string;
   badge?: number;
+  pulse?: boolean;
 }
 
-const navItems: NavItem[] = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.APP.DASHBOARD },
-  { label: 'Projects', icon: FolderKanban, path: ROUTES.APP.PROJECTS },
-  { label: 'Members', icon: Users, path: ROUTES.APP.MEMBERS },
-  { label: 'Activity', icon: Activity, path: ROUTES.APP.ACTIVITY },
-  { label: 'AI Workspace', icon: Bot, path: ROUTES.APP.AI },
-  {
-    label: 'Notifications',
-    icon: Bell,
-    path: ROUTES.APP.NOTIFICATIONS,
-    badge: mockNotifications.filter((n) => !n.read).length,
-  },
-];
-
-const bottomItems: NavItem[] = [
-  { label: 'Settings', icon: Settings, path: ROUTES.APP.WORKSPACE_SETTINGS },
-];
-
 export function Sidebar() {
-  const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { sidebarCollapsed, toggleSidebar, activityPulse, setActivityPulse } = useUIStore();
+  const { notifications } = useNotificationStore();
   const location = useLocation();
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  const navItems: NavItem[] = [
+    { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.APP.DASHBOARD },
+    { label: 'Projects', icon: FolderKanban, path: ROUTES.APP.PROJECTS },
+    { label: 'Members', icon: Users, path: ROUTES.APP.MEMBERS },
+    { label: 'Activity', icon: Activity, path: ROUTES.APP.ACTIVITY, pulse: activityPulse },
+    { label: 'AI Workspace', icon: Bot, path: ROUTES.APP.AI },
+    { label: 'Notifications', icon: Bell, path: ROUTES.APP.NOTIFICATIONS, badge: unreadCount },
+  ];
+
+  const bottomItems: NavItem[] = [
+    { label: 'Settings', icon: Settings, path: ROUTES.APP.WORKSPACE_SETTINGS },
+  ];
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -57,16 +51,30 @@ export function Sidebar() {
     const content = (
       <Link
         to={item.path}
+        onClick={() => {
+          if (item.path === ROUTES.APP.ACTIVITY) {
+            setActivityPulse(false);
+          }
+        }}
         className={cn(
-          'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors relative',
+          'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-[border-color,background-color,filter] duration-200 border border-transparent relative',
           active
-            ? 'bg-accent text-foreground font-medium'
-            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+            ? 'bg-accent text-foreground font-medium border-border'
+            : 'text-muted-foreground hover:bg-accent hover:text-foreground hover:brightness-[0.99] hover:border-border/70 active:brightness-95'
         )}
       >
         <item.icon className="h-4 w-4 shrink-0" />
         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
-        {item.badge && item.badge > 0 && (
+        {item.pulse && (
+          <span
+            aria-label="New activity"
+            className={cn(
+              'h-2 w-2 rounded-full bg-primary shrink-0',
+              sidebarCollapsed ? 'absolute top-1.5 right-1.5' : 'ml-auto'
+            )}
+          />
+        )}
+        {item.badge !== undefined && item.badge > 0 && (
           <span
             className={cn(
               'flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-medium',
@@ -120,7 +128,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 py-2 px-2 space-y-0.5">
+      <nav className="flex-1 py-2 px-2 space-y-0.5" aria-label="Primary">
         {navItems.map(renderItem)}
       </nav>
 

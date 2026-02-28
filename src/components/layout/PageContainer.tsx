@@ -6,7 +6,7 @@ interface PageContainerProps {
 
 export function PageContainer({ title, actions, children }: PageContainerProps) {
   return (
-    <div className="p-6 animate-fade-in">
+    <div className="p-6 page-enter">
       {(title || actions) && (
         <div className="flex items-center justify-between mb-6">
           {title && <h1 className="text-2xl font-semibold text-foreground">{title}</h1>}

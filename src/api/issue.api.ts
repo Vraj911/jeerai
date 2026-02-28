@@ -1,13 +1,15 @@
 import {
-  mockIssues as initialIssues,
-  mockComments as initialComments,
+  mockIssues,
+  mockComments,
   mockUsers,
   mockProjects,
 } from '@/lib/mockAdapter';
-import type { Issue, IssueStatus, Comment } from '@/types/issue';
+import type { Issue, IssueStatus, Comment, IssuePriority } from '@/types/issue';
 
-let issues = [...initialIssues];
-let comments = [...initialComments];
+const issues = mockIssues;
+const comments = mockComments;
+const statusFlow: IssueStatus[] = ['todo', 'in-progress', 'review', 'done'];
+const priorityFlow: IssuePriority[] = ['highest', 'high', 'medium', 'low', 'lowest'];
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -16,7 +18,7 @@ function delay(ms: number): Promise<void> {
 export const issueApi = {
   getAll: async (projectId?: string): Promise<Issue[]> => {
     await delay(200);
-    return projectId ? issues.filter((i) => i.projectId === projectId) : [...issues];
+    return projectId ? issues.filter((i) => i.projectId === projectId) : issues.slice();
   },
 
   getById: async (id: string): Promise<Issue | undefined> => {
@@ -44,17 +46,20 @@ export const issueApi = {
       labels: data.labels ?? [],
       projectId: data.projectId ?? 'proj-1',
     };
-    issues = [newIssue, ...issues];
+    issues.unshift(newIssue);
     return newIssue;
   },
 
   update: async (id: string, data: Partial<Issue>): Promise<Issue> => {
     await delay(150);
-    issues = issues.map((i) =>
-      i.id === id ? { ...i, ...data, updatedAt: new Date().toISOString() } : i
-    );
-    const updated = issues.find((i) => i.id === id);
-    if (!updated) throw new Error('Issue not found');
+    const index = issues.findIndex((i) => i.id === id);
+    if (index === -1) throw new Error('Issue not found');
+    const updated = {
+      ...issues[index],
+      ...data,
+      updatedAt: new Date().toISOString(),
+    };
+    issues[index] = updated;
     return updated;
   },
 
@@ -64,7 +69,7 @@ export const issueApi = {
 
   getComments: async (issueId: string): Promise<Comment[]> => {
     await delay(100);
-    return comments.filter((c) => c.issueId === issueId);
+    return comments.filter((c) => c.issueId === issueId).slice();
   },
 
   addComment: async (issueId: string, content: string, authorId: string): Promise<Comment> => {
@@ -77,7 +82,35 @@ export const issueApi = {
       content,
       createdAt: new Date().toISOString(),
     };
-    comments = [newComment, ...comments];
+    comments.unshift(newComment);
     return newComment;
+  },
+
+  assignToMe: async (id: string): Promise<Issue> => {
+    return issueApi.update(id, { assignee: mockUsers[0] });
+  },
+
+  setPriority: async (id: string, priority: IssuePriority): Promise<Issue> => {
+    return issueApi.update(id, { priority });
+  },
+
+  simulateRandomUpdate: async (randomValue: number): Promise<Issue> => {
+    const issueIndex = Math.floor(randomValue * issues.length) % Math.max(issues.length, 1);
+    const issue = issues[issueIndex];
+    if (!issue) {
+      throw new Error('No issues found');
+    }
+
+    const statusIndex = statusFlow.indexOf(issue.status);
+    const priorityIndex = priorityFlow.indexOf(issue.priority);
+    const flipPriority = randomValue > 0.6;
+
+    const nextStatus = statusFlow[(statusIndex + 1) % statusFlow.length];
+    const nextPriority = priorityFlow[(priorityIndex + 1) % priorityFlow.length];
+
+    return issueApi.update(issue.id, {
+      status: flipPriority ? issue.status : nextStatus,
+      priority: flipPriority ? nextPriority : issue.priority,
+    });
   },
 };

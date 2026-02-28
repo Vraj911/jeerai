@@ -1,6 +1,10 @@
 import { Outlet, useParams, NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { mockProjects } from '@/lib/mockAdapter';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Settings, Share2 } from 'lucide-react';
+import { ROUTES } from '@/routes/routeConstants';
 
 const projectTabs = [
   { label: 'Overview', path: '' },
@@ -19,12 +23,52 @@ export function ProjectLayout() {
 
   return (
     <div className="flex flex-col h-full">
+      <div className="border-b bg-gradient-to-b from-muted/70 to-background">
+        <div className="flex items-center justify-between px-6 py-2 gap-3">
+          {project && (
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar className="h-7 w-7 rounded-md">
+                <AvatarFallback className="rounded-md text-[11px] font-semibold">
+                  {project.key.slice(0, 2)}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate text-foreground">{project.name}</p>
+                <div className="flex items-center gap-1 mt-0.5">
+                  {project.members.slice(0, 3).map((member) => (
+                    <Avatar key={member.id} className="h-5 w-5 rounded-md border">
+                      <AvatarFallback className="rounded-md text-[9px]">
+                        {member.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {project.members.length > 3 && (
+                    <span className="text-[10px] text-muted-foreground">+{project.members.length - 3}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 text-xs"
+              asChild
+            >
+              <NavLink to={ROUTES.PROJECT.SETTINGS(projectId ?? '')}>
+                <Settings className="h-3.5 w-3.5 mr-1" />
+                Settings
+              </NavLink>
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs">
+              <Share2 className="h-3.5 w-3.5 mr-1" />
+              Share
+            </Button>
+          </div>
+        </div>
+      </div>
       <div className="flex items-center border-b px-6 gap-1 overflow-x-auto shrink-0">
-        {project && (
-          <span className="text-sm font-medium mr-4 shrink-0 text-foreground">
-            {project.name}
-          </span>
-        )}
         {projectTabs.map((tab) => (
           <NavLink
             key={tab.path}

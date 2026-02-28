@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCommandStore } from '@/store/command.store';
 import { useUIStore } from '@/store/ui.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { useIssues } from '@/queries/issue.queries';
 import { useProjects } from '@/queries/project.queries';
+import { fuzzyMatch } from '@/lib/search';
 import {
   CommandDialog,
   CommandInput,
@@ -12,6 +13,7 @@ import {
   CommandEmpty,
   CommandGroup,
   CommandItem,
+  CommandShortcut,
 } from '@/components/ui/command';
 import {
   FolderKanban,
@@ -23,95 +25,183 @@ import {
   Bell,
   Users,
   Settings,
+  PanelTop,
 } from 'lucide-react';
 
+type PaletteItem = {
+  id: string;
+  label: string;
+  value: string;
+  icon: React.ComponentType<{ className?: string }>;
+  execute: () => void;
+  shortcut?: string;
+};
+
 export function CommandPalette() {
-  const { open, setOpen } = useCommandStore();
+  const { open, setOpen, query, setQuery } = useCommandStore();
   const { setIssueCreateModalOpen } = useUIStore();
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen(!open);
-      }
-    };
-    window.addEventListener('keydown', down);
-    return () => window.removeEventListener('keydown', down);
-  }, [open, setOpen]);
-
   const runCommand = (fn: () => void) => {
     setOpen(false);
+    setQuery('');
     fn();
   };
 
+  const navigationItems = useMemo<PaletteItem[]>(
+    () => [
+      {
+        id: 'nav-dashboard',
+        label: 'Dashboard',
+        value: 'dashboard home',
+        icon: LayoutDashboard,
+        execute: () => navigate(ROUTES.APP.DASHBOARD),
+      },
+      {
+        id: 'nav-projects',
+        label: 'Projects',
+        value: 'projects list',
+        icon: FolderKanban,
+        execute: () => navigate(ROUTES.APP.PROJECTS),
+        shortcut: 'G P',
+      },
+      {
+        id: 'nav-activity',
+        label: 'Activity',
+        value: 'activity feed',
+        icon: Activity,
+        execute: () => navigate(ROUTES.APP.ACTIVITY),
+        shortcut: 'G A',
+      },
+      {
+        id: 'nav-notifications',
+        label: 'Notifications',
+        value: 'notifications inbox',
+        icon: Bell,
+        execute: () => navigate(ROUTES.APP.NOTIFICATIONS),
+      },
+      {
+        id: 'nav-members',
+        label: 'Members',
+        value: 'members users',
+        icon: Users,
+        execute: () => navigate(ROUTES.APP.MEMBERS),
+      },
+      {
+        id: 'nav-ai',
+        label: 'AI Workspace',
+        value: 'ai workspace assistant',
+        icon: Bot,
+        execute: () => navigate(ROUTES.APP.AI),
+      },
+      {
+        id: 'nav-settings',
+        label: 'Workspace Settings',
+        value: 'settings preferences',
+        icon: Settings,
+        execute: () => navigate(ROUTES.APP.WORKSPACE_SETTINGS),
+      },
+    ],
+    [navigate]
+  );
+
+  const actionItems = useMemo<PaletteItem[]>(
+    () => [
+      {
+        id: 'action-create',
+        label: 'Create Issue',
+        value: 'create issue new ticket',
+        icon: Plus,
+        execute: () => setIssueCreateModalOpen(true),
+        shortcut: 'C',
+      },
+      {
+        id: 'action-open-settings',
+        label: 'Open Settings',
+        value: 'open settings',
+        icon: Settings,
+        execute: () => navigate(ROUTES.APP.WORKSPACE_SETTINGS),
+      },
+    ],
+    [navigate, setIssueCreateModalOpen]
+  );
+
+  const projectItems = useMemo<PaletteItem[]>(
+    () =>
+      projects.map((project) => ({
+        id: `project-${project.id}`,
+        label: `${project.key} ${project.name}`,
+        value: `${project.key} ${project.name} switch project board`,
+        icon: PanelTop,
+        execute: () => navigate(ROUTES.PROJECT.BOARD(project.id)),
+      })),
+    [navigate, projects]
+  );
+
+  const issueItems = useMemo<PaletteItem[]>(
+    () =>
+      issues.map((issue) => ({
+        id: `issue-${issue.id}`,
+        label: `${issue.key} ${issue.title}`,
+        value: `${issue.key} ${issue.title} issue ticket`,
+        icon: FileText,
+        execute: () => navigate(ROUTES.ISSUE.DETAIL(issue.id)),
+      })),
+    [issues, navigate]
+  );
+
+  const filteredNavigation = fuzzyMatch(query, navigationItems, (item) => item.value).slice(0, 8);
+  const filteredActions = fuzzyMatch(query, actionItems, (item) => item.value).slice(0, 6);
+  const filteredProjects = fuzzyMatch(query, projectItems, (item) => item.value).slice(0, 8);
+  const filteredIssues = fuzzyMatch(query, issueItems, (item) => item.value).slice(0, 12);
+
   return (
     <CommandDialog open={open} onOpenChange={setOpen} aria-describedby={undefined}>
-      <CommandInput placeholder="Type a command or search issues..." aria-label="Command palette search" />
+      <CommandInput
+        placeholder="Search commands, issues, and projects..."
+        aria-label="Command palette search"
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
+
         <CommandGroup heading="Navigation">
-          <CommandItem value="dashboard" onSelect={() => runCommand(() => navigate(ROUTES.APP.DASHBOARD))}>
-            <LayoutDashboard className="mr-2 h-4 w-4" />
-            Dashboard
-          </CommandItem>
-          <CommandItem value="projects" onSelect={() => runCommand(() => navigate(ROUTES.APP.PROJECTS))}>
-            <FolderKanban className="mr-2 h-4 w-4" />
-            Projects
-          </CommandItem>
-          <CommandItem value="activity" onSelect={() => runCommand(() => navigate(ROUTES.APP.ACTIVITY))}>
-            <Activity className="mr-2 h-4 w-4" />
-            Activity
-          </CommandItem>
-          <CommandItem value="ai" onSelect={() => runCommand(() => navigate(ROUTES.APP.AI))}>
-            <Bot className="mr-2 h-4 w-4" />
-            AI Workspace
-          </CommandItem>
-          <CommandItem value="notifications" onSelect={() => runCommand(() => navigate(ROUTES.APP.NOTIFICATIONS))}>
-            <Bell className="mr-2 h-4 w-4" />
-            Notifications
-          </CommandItem>
-          <CommandItem value="members" onSelect={() => runCommand(() => navigate(ROUTES.APP.MEMBERS))}>
-            <Users className="mr-2 h-4 w-4" />
-            Members
-          </CommandItem>
-          <CommandItem value="settings" onSelect={() => runCommand(() => navigate(ROUTES.APP.WORKSPACE_SETTINGS))}>
-            <Settings className="mr-2 h-4 w-4" />
-            Workspace Settings
-          </CommandItem>
-        </CommandGroup>
-        <CommandGroup heading="Actions">
-          <CommandItem value="create issue" onSelect={() => runCommand(() => setIssueCreateModalOpen(true))}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Issue
-          </CommandItem>
-        </CommandGroup>
-        <CommandGroup heading="Projects">
-          {projects.slice(0, 5).map((project) => (
-            <CommandItem
-              key={project.id}
-              value={`${project.key} ${project.name}`}
-              onSelect={() => runCommand(() => navigate(ROUTES.PROJECT.BOARD(project.id)))}
-            >
-              <FolderKanban className="mr-2 h-4 w-4" />
-              <span className="font-mono text-xs mr-2 text-muted-foreground">{project.key}</span>
-              <span className="truncate">{project.name}</span>
+          {filteredNavigation.map((item) => (
+            <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
+              <item.icon className="mr-2 h-4 w-4" />
+              {item.label}
+              {item.shortcut ? <CommandShortcut>{item.shortcut}</CommandShortcut> : null}
             </CommandItem>
           ))}
         </CommandGroup>
+
+        <CommandGroup heading="Actions">
+          {filteredActions.map((item) => (
+            <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
+              <item.icon className="mr-2 h-4 w-4" />
+              {item.label}
+              {item.shortcut ? <CommandShortcut>{item.shortcut}</CommandShortcut> : null}
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
+        <CommandGroup heading="Switch Project">
+          {filteredProjects.map((item) => (
+            <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
+              <item.icon className="mr-2 h-4 w-4" />
+              <span className="truncate">{item.label}</span>
+            </CommandItem>
+          ))}
+        </CommandGroup>
+
         <CommandGroup heading="Issues">
-          {issues.slice(0, 8).map((issue) => (
-            <CommandItem
-              key={issue.id}
-              value={`${issue.key} ${issue.title}`}
-              onSelect={() => runCommand(() => navigate(ROUTES.ISSUE.DETAIL(issue.id)))}
-            >
-              <FileText className="mr-2 h-4 w-4" />
-              <span className="font-mono text-xs mr-2 text-muted-foreground shrink-0">{issue.key}</span>
-              <span className="truncate">{issue.title}</span>
+          {filteredIssues.map((item) => (
+            <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
+              <item.icon className="mr-2 h-4 w-4" />
+              <span className="truncate">{item.label}</span>
             </CommandItem>
           ))}
         </CommandGroup>

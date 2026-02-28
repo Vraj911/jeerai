@@ -1,24 +1,16 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockNotifications, type AppNotification } from '@/lib/mockAdapter';
+import type { AppNotification } from '@/lib/mockAdapter';
 import { ROUTES } from '@/routes/routeConstants';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useNotificationStore } from '@/store/notification.store';
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
-  const [notifications, setNotifications] = useState(mockNotifications);
-
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const markRead = (id: string) => {
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
-  };
+  const { notifications, markAllRead, markRead } = useNotificationStore();
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -80,7 +72,7 @@ function NotificationList({
             onNavigate(n.targetId);
           }}
           className={cn(
-            'flex items-start gap-3 py-3 px-3 rounded-md cursor-pointer hover:bg-accent/50 transition-colors',
+            'flex items-start gap-3 py-3 px-3 rounded-md cursor-pointer hover:bg-accent/50 transition-[background-color,border-color,filter] duration-200 border border-transparent hover:border-border/70 hover:brightness-[0.99] active:brightness-95',
             !n.read && 'bg-primary/5'
           )}
         >

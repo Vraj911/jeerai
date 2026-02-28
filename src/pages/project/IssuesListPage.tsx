@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockIssues } from '@/lib/mockAdapter';
 import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import { PRIORITY_LABELS } from '@/lib/constants';
+import { useIssues } from '@/queries/issue.queries';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -16,7 +17,20 @@ import {
 export default function IssuesListPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const issues = mockIssues.filter((i) => i.projectId === projectId);
+  const { data: issues = [], isLoading } = useIssues(projectId);
+
+  if (isLoading) {
+    return (
+      <PageContainer title="Issues">
+        <div className="space-y-2">
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer title="Issues">
