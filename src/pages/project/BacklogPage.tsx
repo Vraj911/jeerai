@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockIssues, mockSprints } from '@/lib/mockAdapter';
+import { useIssues } from '@/queries/issue.queries';
+import { mockSprints } from '@/lib/mockAdapter';
 import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import {
@@ -12,12 +13,21 @@ import {
 import { ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Issue } from '@/types/issue';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function BacklogPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-  const issues = mockIssues.filter((i) => i.projectId === projectId);
+  const { data: issues = [], isLoading } = useIssues(projectId);
   const sprints = mockSprints.filter((s) => s.projectId === projectId);
+
+  if (isLoading) {
+    return (
+      <PageContainer title="Backlog">
+        <Skeleton className="h-64 w-full" />
+      </PageContainer>
+    );
+  }
 
   const groups = [
     ...sprints.map((s) => ({

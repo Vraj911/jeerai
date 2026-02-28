@@ -3,8 +3,15 @@ import type { IssueStatus } from '@/types/issue';
 
 export interface AnalyticsData {
   issuesByStatus: Array<{ status: string; count: number }>;
-  velocityData: Array<{ sprint: string; completed: number; added: number }>;
-  workloadData: Array<{ name: string; issues: number }>;
+  completionData: Array<{ week: string; completed: number }>;
+  velocityData: Array<{ sprint: string; completed: number }>;
+  workloadData: Array<{
+    name: string;
+    todo: number;
+    inProgress: number;
+    review: number;
+    done: number;
+  }>;
 }
 
 function delay(ms: number): Promise<void> {
@@ -21,19 +28,40 @@ export const analyticsApi = {
         count: projectIssues.filter((i) => i.status === status).length,
       })
     );
+    const assigneeCounts = new Map<
+      string,
+      { todo: number; inProgress: number; review: number; done: number }
+    >();
+    projectIssues.forEach((issue) => {
+      const name = issue.assignee?.name ?? 'Unassigned';
+      if (!assigneeCounts.has(name)) {
+        assigneeCounts.set(name, { todo: 0, inProgress: 0, review: 0, done: 0 });
+      }
+      const c = assigneeCounts.get(name)!;
+      if (issue.status === 'todo') c.todo++;
+      else if (issue.status === 'in-progress') c.inProgress++;
+      else if (issue.status === 'review') c.review++;
+      else c.done++;
+    });
+    const workloadData = Array.from(assigneeCounts.entries()).map(([name, counts]) => ({
+      name,
+      ...counts,
+    }));
+
     return {
       issuesByStatus: statusCounts,
+      completionData: [
+        { week: 'Week 1', completed: 3 },
+        { week: 'Week 2', completed: 5 },
+        { week: 'Week 3', completed: 4 },
+        { week: 'Week 4', completed: 6 },
+      ],
       velocityData: [
-        { sprint: 'Sprint 10', completed: 8, added: 12 },
-        { sprint: 'Sprint 11', completed: 11, added: 9 },
-        { sprint: 'Sprint 12', completed: 5, added: 7 },
+        { sprint: 'Sprint 10', completed: 8 },
+        { sprint: 'Sprint 11', completed: 11 },
+        { sprint: 'Sprint 12', completed: 5 },
       ],
-      workloadData: [
-        { name: 'John Doe', issues: 4 },
-        { name: 'Jane Smith', issues: 3 },
-        { name: 'Alex Chen', issues: 3 },
-        { name: 'Sarah Wilson', issues: 2 },
-      ],
+      workloadData,
     };
   },
 };

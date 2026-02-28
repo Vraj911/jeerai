@@ -31,8 +31,14 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
   const [status, setStatus] = useState<IssueStatus>('todo');
   const [priority, setPriority] = useState<IssuePriority>('medium');
   const [assigneeId, setAssigneeId] = useState('unassigned');
+  const [labelsInput, setLabelsInput] = useState('');
   const createIssue = useCreateIssue();
   const { toast } = useToast();
+
+  const labels = labelsInput
+    .split(',')
+    .map((l) => l.trim().toLowerCase())
+    .filter(Boolean);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,7 +48,7 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
         ? null
         : mockUsers.find((u) => u.id === assigneeId) ?? null;
     createIssue.mutate(
-      { title, projectId, status, priority, assignee, labels: [] },
+      { title, projectId, status, priority, assignee, labels },
       {
         onSuccess: () => {
           toast({ title: 'Issue created', description: title });
@@ -50,6 +56,7 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
           setStatus('todo');
           setPriority('medium');
           setAssigneeId('unassigned');
+          setLabelsInput('');
           onOpenChange(false);
         },
       }
@@ -133,6 +140,14 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Labels</Label>
+            <Input
+              value={labelsInput}
+              onChange={(e) => setLabelsInput(e.target.value)}
+              placeholder="frontend, bug, feature (comma-separated)"
+            />
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>

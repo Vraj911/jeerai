@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
+import { useRealtimeSimulation } from '@/hooks/useRealtimeSimulation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
@@ -8,6 +9,7 @@ import { useUIStore } from '@/store/ui.store';
 
 export function AppLayout() {
   const { issueCreateModalOpen, setIssueCreateModalOpen } = useUIStore();
+  useRealtimeSimulation();
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {

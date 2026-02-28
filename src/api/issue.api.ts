@@ -1,7 +1,13 @@
-import { mockIssues as initialIssues, mockComments, mockUsers } from '@/lib/mockAdapter';
+import {
+  mockIssues as initialIssues,
+  mockComments as initialComments,
+  mockUsers,
+  mockProjects,
+} from '@/lib/mockAdapter';
 import type { Issue, IssueStatus, Comment } from '@/types/issue';
 
 let issues = [...initialIssues];
+let comments = [...initialComments];
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,9 +26,13 @@ export const issueApi = {
 
   create: async (data: Partial<Issue>): Promise<Issue> => {
     await delay(200);
+    const projectId = data.projectId ?? 'proj-1';
+    const project = mockProjects.find((p) => p.id === projectId);
+    const projectKey = project?.key ?? 'JEERA';
+    const count = issues.filter((i) => i.projectId === projectId).length;
     const newIssue: Issue = {
       id: `issue-${Date.now()}`,
-      key: `JEERA-${100 + issues.length}`,
+      key: `${projectKey}-${100 + count + 1}`,
       title: data.title ?? '',
       status: data.status ?? 'todo',
       priority: data.priority ?? 'medium',
@@ -54,6 +64,20 @@ export const issueApi = {
 
   getComments: async (issueId: string): Promise<Comment[]> => {
     await delay(100);
-    return mockComments.filter((c) => c.issueId === issueId);
+    return comments.filter((c) => c.issueId === issueId);
+  },
+
+  addComment: async (issueId: string, content: string, authorId: string): Promise<Comment> => {
+    await delay(150);
+    const author = mockUsers.find((u) => u.id === authorId) ?? mockUsers[0];
+    const newComment: Comment = {
+      id: `comment-${Date.now()}`,
+      issueId,
+      author,
+      content,
+      createdAt: new Date().toISOString(),
+    };
+    comments = [newComment, ...comments];
+    return newComment;
   },
 };

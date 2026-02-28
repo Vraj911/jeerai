@@ -1,16 +1,33 @@
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockActivities } from '@/lib/mockAdapter';
+import { useActivities } from '@/queries/activity.queries';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/routes/routeConstants';
 import { format } from 'date-fns';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export default function ActivityPage() {
   const navigate = useNavigate();
+  const { data: activities = [], isLoading } = useActivities();
+
+  if (isLoading) {
+    return (
+      <PageContainer title="Activity">
+        <div className="max-w-2xl space-y-2">
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+          <Skeleton className="h-16 w-full" />
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer title="Activity">
       <div className="max-w-2xl space-y-1">
-        {mockActivities.map((activity) => (
+        {activities.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-8">No activity yet.</p>
+        ) : (
+          activities.map((activity) => (
           <div
             key={activity.id}
             className="flex items-start gap-3 py-3 border-b last:border-0 hover:bg-accent/30 px-2 rounded-md cursor-pointer transition-colors"
@@ -28,7 +45,8 @@ export default function ActivityPage() {
               </div>
             </div>
           </div>
-        ))}
+        ))
+        )}
       </div>
     </PageContainer>
   );

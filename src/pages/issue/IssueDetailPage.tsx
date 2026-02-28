@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useIssue, useIssueComments, useUpdateIssue } from '@/queries/issue.queries';
+import { useIssue, useIssueComments, useUpdateIssue, useAddComment } from '@/queries/issue.queries';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,13 +17,18 @@ import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/constants';
 import { mockUsers } from '@/lib/mockAdapter';
 import type { IssueStatus, IssuePriority } from '@/types/issue';
 import { format } from 'date-fns';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 export default function IssueDetailPage() {
   const { issueId } = useParams<{ issueId: string }>();
   const navigate = useNavigate();
   const { data: issue, isLoading } = useIssue(issueId ?? '');
   const updateIssue = useUpdateIssue();
+  const addComment = useAddComment();
   const { data: comments } = useIssueComments(issueId ?? '');
+  const { toast } = useToast();
+  const [commentText, setCommentText] = useState('');
 
   if (isLoading || !issue) {
     return (
@@ -62,6 +68,33 @@ export default function IssueDetailPage() {
 
           <div>
             <h3 className="text-sm font-medium text-foreground mb-3">Comments</h3>
+            <form
+              className="mb-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!commentText.trim() || !issueId) return;
+                addComment.mutate(
+                  { issueId, content: commentText.trim(), authorId: mockUsers[0].id },
+                  {
+                    onSuccess: () => {
+                      toast({ title: 'Comment added', description: 'Your comment has been posted.' });
+                      setCommentText('');
+                    },
+                  }
+                );
+              }}
+            >
+              <Textarea
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Add a comment..."
+                rows={3}
+                className="mb-2"
+              />
+              <Button size="sm" type="submit" disabled={!commentText.trim()}>
+                Add comment
+              </Button>
+            </form>
             <div className="space-y-3">
               {(comments ?? []).map((comment) => (
                 <div key={comment.id} className="rounded-md border p-3">

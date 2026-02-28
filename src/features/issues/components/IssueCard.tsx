@@ -1,4 +1,5 @@
 import type { Issue } from '@/types/issue';
+import { memo } from 'react';
 import { cn } from '@/lib/utils';
 import { ArrowUp, ArrowDown, Minus, ChevronsUp, ChevronsDown } from 'lucide-react';
 
@@ -23,7 +24,7 @@ const priorityColorClasses: Record<string, string> = {
   lowest: 'text-priority-lowest',
 };
 
-export function IssueCard({ issue, onClick }: IssueCardProps) {
+export const IssueCard = memo(function IssueCard({ issue, onClick }: IssueCardProps) {
   const PriorityIcon = priorityIcons[issue.priority];
 
   return (
@@ -45,4 +46,4 @@ export function IssueCard({ issue, onClick }: IssueCardProps) {
       </div>
     </div>
   );
-}
+});
