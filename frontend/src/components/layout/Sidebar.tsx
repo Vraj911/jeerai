@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
 import { useNotificationStore } from '@/store/notification.store';
+import { useThemeStore } from '@/store/theme.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { APP_NAME, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants';
 import {
@@ -28,6 +29,7 @@ interface NavItem {
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, activityPulse, setActivityPulse } = useUIStore();
   const { notifications } = useNotificationStore();
+  const { theme } = useThemeStore();
   const location = useLocation();
   const unreadCount = notifications.filter((n) => !n.read).length;
 
@@ -107,9 +109,11 @@ export function Sidebar() {
       style={{ width: sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
     >
       <div className="flex h-12 items-center border-b px-3 gap-2">
-        <div className="h-6 w-6 rounded-md bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shrink-0">
-          J2
-        </div>
+        <img
+          src={theme === 'light' ? '/JeerAi-light.png' : '/JeerAi.png'}
+          alt={`${APP_NAME} logo`}
+          className="h-6 w-6 rounded-md shrink-0"
+        />
         {!sidebarCollapsed && (
           <span className="text-sm font-semibold text-foreground truncate">
             {APP_NAME}

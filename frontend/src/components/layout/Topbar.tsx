@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils';
 import { fuzzyMatch } from '@/lib/search';
 import { useIssues } from '@/queries/issue.queries';
 import { useProjects } from '@/queries/project.queries';
+import { APP_NAME } from '@/lib/constants';
 
 type SearchEntity =
   | { id: string; label: string; value: string; route: string; group: 'Issues'; meta: string }
@@ -258,9 +259,11 @@ export function Topbar() {
         {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
-      <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center text-xs font-medium text-primary-foreground ml-1">
-        {mockUsers[0].name.charAt(0)}
-      </div>
+      <img
+        src={theme === 'light' ? '/JeerAi-light.png' : '/JeerAi.png'}
+        alt={`${APP_NAME} logo`}
+        className="h-9 w-9 rounded-md ml-1 object-contain"
+      />
     </header>
   );
 }
