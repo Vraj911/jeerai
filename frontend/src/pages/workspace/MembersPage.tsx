@@ -1,5 +1,4 @@
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockUsers } from '@/lib/mockAdapter';
 import {
   Table,
   TableBody,
@@ -9,8 +8,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { useUsers } from '@/queries/user.queries';
 
 export default function MembersPage() {
+  const { data: users = [] } = useUsers();
+
   return (
     <PageContainer title="Members">
       <div className="rounded-md border">
@@ -23,7 +25,7 @@ export default function MembersPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockUsers.map((user) => (
+            {users.map((user) => (
               <TableRow key={user.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">

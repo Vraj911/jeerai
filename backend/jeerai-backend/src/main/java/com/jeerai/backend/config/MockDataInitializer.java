@@ -1,55 +1,67 @@
 package com.jeerai.backend.config;
 
-import java.time.Instant;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jeerai.backend.model.AutomationRule;
 import com.jeerai.backend.model.Project;
-import com.jeerai.backend.model.User;
+import com.jeerai.backend.repository.MockDataStore;
 import com.jeerai.backend.repository.ProjectRepository;
 
 @Component
 public class MockDataInitializer implements ApplicationRunner {
 
     private final ProjectRepository projectRepository;
+    private final MockDataStore store;
+    private final ObjectMapper objectMapper;
 
-    public MockDataInitializer(ProjectRepository projectRepository) {
+    public MockDataInitializer(ProjectRepository projectRepository, MockDataStore store, ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
+        this.store = store;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        // Seed data equivalent to frontend `mockAdapter.ts` (temporary, in-memory)
-        User user1 = new User("user-1", "John Doe", "john@jeera.io");
-        User user2 = new User("user-2", "Jane Smith", "jane@jeera.io");
-        User user3 = new User("user-3", "Alex Chen", "alex@jeera.io");
-        User user4 = new User("user-4", "Sarah Wilson", "sarah@jeera.io");
-        List<User> allUsers = List.of(user1, user2, user3, user4);
+        if (!store.isEmpty()) {
+            return;
+        }
 
-        Project proj1 = new Project(
-                "proj-1",
-                "JEERA",
-                "Jeera2 Development",
-                "Main project for Jeera2 frontend build",
-                user1,
-                allUsers,
-                Instant.parse("2025-01-15T10:00:00Z"),
-                Instant.parse("2026-02-28T09:00:00Z"));
+        MockDataPayload payload = loadPayload();
 
-        Project proj2 = new Project(
-                "proj-2",
-                "INFRA",
-                "Infrastructure",
-                "DevOps and infrastructure management",
-                user3,
-                List.of(user3, user4),
-                Instant.parse("2025-03-01T10:00:00Z"),
-                Instant.parse("2026-02-20T09:00:00Z"));
+        safe(payload.getUsers()).forEach(store::saveUser);
 
-        projectRepository.save(proj1);
-        projectRepository.save(proj2);
+        for (Project project : safe(payload.getProjects())) {
+            store.saveProject(project);
+            projectRepository.save(project);
+        }
+
+        safe(payload.getSprints()).forEach(store::saveSprint);
+        safe(payload.getIssues()).forEach(store::saveIssue);
+        safe(payload.getComments()).forEach(store::saveComment);
+        safe(payload.getActivities()).forEach(store::saveActivity);
+        safe(payload.getNotifications()).forEach(store::saveNotification);
+        safe(payload.getAutomationRules()).forEach(store::saveRule);
+    }
+
+    private MockDataPayload loadPayload() {
+        ClassPathResource resource = new ClassPathResource("mock/mock-data.json");
+        try (InputStream input = resource.getInputStream()) {
+            return objectMapper.readValue(input, MockDataPayload.class);
+        } catch (IOException ex) {
+            throw new IllegalStateException("Failed to load mock data from mock/mock-data.json", ex);
+        }
+    }
+
+    private <T> List<T> safe(List<T> items) {
+        return items == null ? Collections.emptyList() : items;
     }
 }

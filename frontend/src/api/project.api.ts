@@ -1,30 +1,19 @@
-import { mockProjects as initialProjects } from '@/lib/mockAdapter';
+import { apiClient } from './client';
 import type { Project } from '@/types/project';
-
-let projects = [...initialProjects];
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export const projectApi = {
   getAll: async (): Promise<Project[]> => {
-    await delay(200);
-    return [...projects];
+    const { data } = await apiClient.get<Project[]>('/projects');
+    return data;
   },
 
   getById: async (id: string): Promise<Project | undefined> => {
-    await delay(100);
-    return projects.find((p) => p.id === id);
+    const { data } = await apiClient.get<Project>(`/projects/${id}`);
+    return data;
   },
 
-  update: async (id: string, data: Partial<Pick<Project, 'name' | 'description'>>): Promise<Project> => {
-    await delay(150);
-    projects = projects.map((p) =>
-      p.id === id ? { ...p, ...data, updatedAt: new Date().toISOString() } : p
-    );
-    const updated = projects.find((p) => p.id === id);
-    if (!updated) throw new Error('Project not found');
-    return updated;
+  update: async (id: string, payload: Partial<Pick<Project, 'name' | 'description'>>): Promise<Project> => {
+    const { data } = await apiClient.patch<Project>(`/projects/${id}`, payload);
+    return data;
   },
 };

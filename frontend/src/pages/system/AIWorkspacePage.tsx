@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Send, Bot, User as UserIcon, Check, X } from 'lucide-react';
 import type { AIMessage } from '@/types/ai';
 import { useToast } from '@/hooks/use-toast';
-import { mockIssues } from '@/lib/mockAdapter';
+import { useIssues } from '@/queries/issue.queries';
 
 const SECTIONS = [
   {
@@ -28,21 +28,25 @@ const SECTIONS = [
   },
 ] as const;
 
-function getAIResponse(input: string, sectionId: string): string {
+function getAIResponse(
+  input: string,
+  sectionId: string,
+  issues: Array<{ key: string; title: string; status: string; priority: string }>
+): string {
   const lower = input.toLowerCase();
   if (sectionId === 'generate' || lower.includes('issue') || lower.includes('create') || lower.includes('draft')) {
     return "Here's a suggested issue draft:\n\n**Title:** Implement user feedback collection\n**Priority:** Medium\n**Description:** Add a feedback mechanism for users to submit feature requests and bug reports.\n\nWould you like me to create this issue? (Requires your confirmation)";
   }
   if (sectionId === 'summary' || lower.includes('status') || lower.includes('summary') || lower.includes('project')) {
-    const todo = mockIssues.filter((i) => i.status === 'todo').length;
-    const inProgress = mockIssues.filter((i) => i.status === 'in-progress').length;
-    const review = mockIssues.filter((i) => i.status === 'review').length;
-    const done = mockIssues.filter((i) => i.status === 'done').length;
-    return `Project Status Summary:\n\n• **To Do:** ${todo} issues\n• **In Progress:** ${inProgress} issues\n• **Review:** ${review} issues\n• **Done:** ${done} issues\n\nThe team is making steady progress.`;
+    const todo = issues.filter((i) => i.status === 'todo').length;
+    const inProgress = issues.filter((i) => i.status === 'in-progress').length;
+    const review = issues.filter((i) => i.status === 'review').length;
+    const done = issues.filter((i) => i.status === 'done').length;
+    return `Project Status Summary:\n\n- **To Do:** ${todo} issues\n- **In Progress:** ${inProgress} issues\n- **Review:** ${review} issues\n- **Done:** ${done} issues\n\nThe team is making steady progress.`;
   }
   if (sectionId === 'priorities' || lower.includes('priority') || lower.includes('backlog')) {
-    const top = mockIssues.filter((i) => i.status === 'todo' || i.status === 'in-progress').slice(0, 3);
-    return `Backlog Priority Suggestions:\n\n${top.map((i, idx) => `${idx + 1}. **${i.key}** (${i.title}) — ${i.priority} priority`).join('\n')}\n\nI recommend focusing on the highest priority items first. Would you like to create any of these?`;
+    const top = issues.filter((i) => i.status === 'todo' || i.status === 'in-progress').slice(0, 3);
+    return `Backlog Priority Suggestions:\n\n${top.map((i, idx) => `${idx + 1}. **${i.key}** (${i.title}) - ${i.priority} priority`).join('\n')}\n\nI recommend focusing on the highest priority items first. Would you like to create any of these?`;
   }
   return 'I can help you with issue drafts, project summaries, or priority suggestions. What would you like to know?';
 }
@@ -65,6 +69,7 @@ function streamText(text: string, onChunk: (chunk: string) => void): Promise<voi
 }
 
 export default function AIWorkspacePage() {
+  const { data: issues = [] } = useIssues();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [input, setInput] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
@@ -91,7 +96,7 @@ export default function AIWorkspacePage() {
     setInput('');
     setStreaming(true);
 
-    const fullResponse = getAIResponse(prompt, sectionId ?? 'generate');
+    const fullResponse = getAIResponse(prompt, sectionId ?? 'generate', issues);
     let streamedContent = '';
 
     streamText(fullResponse, (chunk) => {
@@ -147,7 +152,7 @@ export default function AIWorkspacePage() {
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[200px]">
           {messages.length === 0 && (
             <div className="text-sm text-muted-foreground py-8 text-center">
-              Select a section above or type your request. AI suggests only — you confirm all actions.
+              Select a section above or type your request. AI suggests only - you confirm all actions.
             </div>
           )}
           {messages.map((msg) => (

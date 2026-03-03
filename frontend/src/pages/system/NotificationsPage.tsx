@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import type { AppNotification } from '@/lib/mockAdapter';
+import type { AppNotification } from '@/types/notification';
 import { ROUTES } from '@/routes/routeConstants';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -89,3 +89,4 @@ function NotificationList({
     </div>
   );
 }
+

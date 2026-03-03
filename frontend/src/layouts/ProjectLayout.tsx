@@ -1,10 +1,10 @@
 import { Outlet, useParams, NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { mockProjects } from '@/lib/mockAdapter';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Settings, Share2 } from 'lucide-react';
 import { ROUTES } from '@/routes/routeConstants';
+import { useProject } from '@/queries/project.queries';
 
 const projectTabs = [
   { label: 'Overview', path: '' },
@@ -18,7 +18,7 @@ const projectTabs = [
 
 export function ProjectLayout() {
   const { projectId } = useParams<{ projectId: string }>();
-  const project = mockProjects.find((p) => p.id === projectId);
+  const { data: project } = useProject(projectId ?? '');
   const basePath = `/app/projects/${projectId}`;
 
   return (

@@ -4,7 +4,7 @@ import { activityApi } from '@/api/activity.api';
 import { issueApi } from '@/api/issue.api';
 import { useUIStore } from '@/store/ui.store';
 import { useNotificationStore } from '@/store/notification.store';
-import type { AppNotification } from '@/lib/mockAdapter';
+import type { AppNotification } from '@/types/notification';
 
 const MIN_INTERVAL_MS = 20000;
 const MAX_INTERVAL_MS = 40000;
@@ -35,7 +35,7 @@ export function useRealtimeSimulation(): void {
       const r1 = rng();
       const r2 = rng();
       const updatedIssue = await issueApi.simulateRandomUpdate(r1);
-      const activity = activityApi.addFromIssueUpdate(updatedIssue, r2);
+      const activity = await activityApi.addFromIssueUpdate(updatedIssue, r2);
       const notification: AppNotification = {
         id: `notif-rt-${Date.now()}`,
         title: `${activity.targetKey} updated`,
@@ -66,3 +66,4 @@ export function useRealtimeSimulation(): void {
     };
   }, [qc]);
 }
+

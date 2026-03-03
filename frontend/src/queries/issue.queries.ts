@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { issueApi } from '@/api/issue.api';
-import { mockUsers } from '@/lib/mockAdapter';
 import type { Issue, IssueStatus } from '@/types/issue';
 
 export function useIssues(projectId?: string) {
@@ -30,30 +29,7 @@ export function useCreateIssue() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<Issue>) => issueApi.create(data),
-    onMutate: async (data) => {
-      await qc.cancelQueries({ queryKey: ['issues'] });
-      const tempId = `temp-${Date.now()}`;
-      const projectId = data.projectId ?? 'proj-1';
-      const optimisticIssue: Issue = {
-        id: tempId,
-        key: '...',
-        title: data.title ?? '',
-        status: data.status ?? 'todo',
-        priority: data.priority ?? 'medium',
-        assignee: data.assignee ?? null,
-        reporter: data.reporter ?? mockUsers[0],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        description: data.description ?? '',
-        labels: data.labels ?? [],
-        projectId,
-      };
-      qc.setQueriesData({ queryKey: ['issues', projectId] }, (old: Issue[] | undefined) =>
-        old ? [optimisticIssue, ...old] : [optimisticIssue]
-      );
-      return { tempId, projectId };
-    },
-    onSuccess: (created) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['issues'] });
     },
   });

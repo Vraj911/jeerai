@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useIssues } from '@/queries/issue.queries';
-import { mockSprints } from '@/lib/mockAdapter';
+import { useSprints } from '@/queries/sprint.queries';
 import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import {
@@ -19,7 +19,7 @@ export default function BacklogPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { data: issues = [], isLoading } = useIssues(projectId);
-  const sprints = mockSprints.filter((s) => s.projectId === projectId);
+  const { data: sprints = [] } = useSprints(projectId);
 
   if (isLoading) {
     return (

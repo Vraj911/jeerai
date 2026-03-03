@@ -14,7 +14,7 @@ import type { IssueStatus, Issue, IssuePriority } from '@/types/issue';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
-import { mockUsers } from '@/lib/mockAdapter';
+import { useUsers } from '@/queries/user.queries';
 import { BoardControlBar, type BoardViewSettings, type QuickFiltersState } from '@/pages/project/components/BoardControlBar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,6 +40,7 @@ export default function BoardPage() {
   const updateStatus = useUpdateIssueStatus();
   const createIssue = useCreateIssue();
   const updateIssue = useUpdateIssue();
+  const { data: users = [] } = useUsers();
 
   const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null);
   const [draggingIssueId, setDraggingIssueId] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export default function BoardPage() {
   const { collapsedBoardColumns, toggleBoardColumnCollapsed } = useUIStore();
 
   const derivedIssues = useMemo(() => {
-    const currentUserId = mockUsers[0].id;
+    const currentUserId = users[0]?.id ?? 'user-1';
     const now = Date.now();
     const query = debouncedSearch.trim().toLowerCase();
 
@@ -87,7 +88,7 @@ export default function BoardPage() {
       }
       return true;
     });
-  }, [debouncedSearch, issues, quickFilters]);
+  }, [debouncedSearch, issues, quickFilters, users]);
 
   const handleDragStart = useCallback((e: React.DragEvent, issue: Issue) => {
     e.dataTransfer.setData('issueId', issue.id);
@@ -271,7 +272,7 @@ export default function BoardPage() {
                           })
                         }
                         onClick={() => navigate(ROUTES.ISSUE.DETAIL(issue.id))}
-                        onAssignToMe={() => updateIssueField(issue, { assignee: mockUsers[0] })}
+                        onAssignToMe={() => updateIssueField(issue, { assignee: users[0] ?? null })}
                         onChangeStatus={(nextStatus) => updateStatus.mutate({ id: issue.id, status: nextStatus })}
                         onSetPriority={(priority: IssuePriority) => updateIssueField(issue, { priority })}
                         onCopyIssueLink={async () => {
@@ -338,3 +339,4 @@ export default function BoardPage() {
     </PageContainer>
   );
 }
+

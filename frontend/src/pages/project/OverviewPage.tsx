@@ -1,15 +1,18 @@
 import { useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockProjects, mockIssues, mockActivities } from '@/lib/mockAdapter';
 import { STATUS_LABELS } from '@/lib/constants';
 import type { IssueStatus } from '@/types/issue';
 import { format } from 'date-fns';
+import { useProject } from '@/queries/project.queries';
+import { useIssues } from '@/queries/issue.queries';
+import { useProjectActivities } from '@/queries/activity.queries';
 
 export default function OverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const project = mockProjects.find((p) => p.id === projectId);
-  const projectIssues = mockIssues.filter((i) => i.projectId === projectId);
-  const activities = mockActivities.filter((a) => a.projectId === projectId).slice(0, 5);
+  const { data: project } = useProject(projectId ?? '');
+  const { data: projectIssues = [] } = useIssues(projectId);
+  const { data: activityList = [] } = useProjectActivities(projectId ?? '');
+  const activities = activityList.slice(0, 5);
 
   if (!project) {
     return <PageContainer title="Project not found"><p className="text-sm text-muted-foreground">This project does not exist.</p></PageContainer>;

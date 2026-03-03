@@ -4,7 +4,7 @@ import { useUIStore } from '@/store/ui.store';
 import { useCommandStore } from '@/store/command.store';
 import { useThemeStore } from '@/store/theme.store';
 import { useDebounce } from '@/hooks/useDebounce';
-import { mockUsers } from '@/lib/mockAdapter';
+import { useUsers } from '@/queries/user.queries';
 import { ROUTES } from '@/routes/routeConstants';
 import { Search, Plus, Command, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ export function Topbar() {
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
+  const { data: users = [] } = useUsers();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
@@ -91,7 +92,7 @@ export function Topbar() {
     () =>
       fuzzyMatch(
         debouncedQuery,
-        mockUsers.map((user) => ({
+        users.map((user) => ({
           id: `member-${user.id}`,
           label: user.name,
           value: `${user.name} ${user.email}`,
@@ -101,7 +102,7 @@ export function Topbar() {
         })),
         (item) => item.value
       ).slice(0, 4),
-    [debouncedQuery]
+    [debouncedQuery, users]
   );
 
   const groupedResults = useMemo(
@@ -267,3 +268,4 @@ export function Topbar() {
     </header>
   );
 }
+

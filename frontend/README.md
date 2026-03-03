@@ -1,151 +1,124 @@
-# Jeera2
+# Jeera2 Full-Stack (Frontend + Spring Boot Backend)
 
-Enterprise React frontend for Jira-like project execution workflows.
+Jeera2 is now a full-stack app where all mock data is centralized in the backend and served through REST APIs.
 
-## Quick Start
+## What Changed
+
+Earlier, the frontend used `mockAdapter.ts` directly.
+
+Now:
+
+- `frontend/src/lib/mockAdapter.ts` is removed.
+- A single backend JSON file is the source of truth for mock data:
+  - `backend/jeerai-backend/src/main/resources/mock/mock-data.json`
+- Spring Boot loads that JSON at startup via:
+  - `MockDataInitializer`
+  - `MockDataPayload`
+- Data is stored in-memory in:
+  - `MockDataStore`
+- Frontend API modules call backend controllers through Axios `apiClient`.
+
+## Data Flow (Current)
+
+`UI -> Query Hooks -> frontend/src/api/*.ts -> HTTP /api/* -> Spring Controllers -> Services -> MockDataStore`
+
+Startup seed flow:
+
+`mock-data.json -> MockDataInitializer -> MockDataStore (+ ProjectRepository for projects)`
+
+## Backend Mock Data Source
+
+Single file:
+
+- `backend/jeerai-backend/src/main/resources/mock/mock-data.json`
+
+Contains:
+
+- users
+- projects
+- sprints
+- issues
+- comments
+- activities
+- notifications
+- automationRules
+
+Loaded by:
+
+- `backend/jeerai-backend/src/main/java/com/jeerai/backend/config/MockDataPayload.java`
+- `backend/jeerai-backend/src/main/java/com/jeerai/backend/config/MockDataInitializer.java`
+
+## API Contract Mapping
+
+### Frontend API file -> Backend endpoint -> Controller
+
+- `project.api.ts` -> `/api/projects` -> `ProjectController`
+- `issue.api.ts` -> `/api/issues` -> `IssueController`
+- `activity.api.ts` -> `/api/activities` -> `ActivityController`
+- `automation.api.ts` -> `/api/automation-rules` -> `AutomationRuleController`
+- `analytics.api.ts` -> `/api/analytics/projects/{projectId}` -> `AnalyticsController`
+- `user.api.ts` -> `/api/users` -> `UserController`
+- `sprint.api.ts` -> `/api/sprints` -> `SprintController`
+- `notification.api.ts` -> `/api/notifications` -> `NotificationController`
+- `ai.api.ts` -> `/api/ai/message` -> `AiController`
+
+## How It Was Implemented
+
+1. Removed frontend direct mock imports and deleted `mockAdapter.ts`.
+2. Added backend domain models/services/controllers for missing entities (issues, activities, automation, analytics, users, sprints, notifications, ai).
+3. Added `mock-data.json` as one centralized dataset.
+4. Added JSON payload binder (`MockDataPayload`) and initializer loader (`MockDataInitializer`).
+5. Rewired all frontend API modules to call backend endpoints.
+6. Updated frontend pages/hooks/stores that previously depended on direct mock arrays.
+
+## Run Locally
+
+## 1) Backend (Spring Boot)
 
 ```bash
+cd backend/jeerai-backend
+mvn spring-boot:run
+```
+
+Default backend URL: `http://localhost:8080`
+
+## 2) Frontend (Vite)
+
+```bash
+cd frontend
 npm install
 npm run dev
 ```
 
-Default app URL: `http://localhost:8080`
+Frontend URL (default Vite): `http://localhost:5173`
+
+`frontend/src/app/config/env` should point API base URL to backend (`http://localhost:8080/api`).
+
+## Verification Performed
+
+- Backend compile:
+
+```bash
+cd backend/jeerai-backend
+mvn -DskipTests compile
+```
+
+- Frontend build:
+
+```bash
+cd frontend
+npm run build
+```
+
+Both pass after migration.
 
 ## Stack
 
-- React + TypeScript (strict)
-- Vite
-- Tailwind + shadcn/ui
-- TanStack Query for server-state style data flows
-- Zustand for UI and interaction state
-
-## Core Architecture
-
-Data flow:
-
-`UI -> Pages/Features -> Query hooks -> API contracts -> mockAdapter`
-
-State split:
-
-- Query: issues/projects/activities and mutations
-- Zustand: sidebar, command palette state, UI preferences, notifications, interaction flags
-
-## Implemented Enterprise Interaction Layer
-
-### Board
-
-- Board control bar with:
-  - 200ms debounced board search (derived filtering only)
-  - quick filters: My Issues, Recently Updated, High Priority
-  - group-by selector UI (None, Assignee, Priority)
-  - view settings toggles (compact cards, assignee, priority)
-- Column header menu:
-  - Collapse column (persisted via Zustand)
-  - Move all issues (mock action)
-  - Configure column (disabled)
-- Collapsed columns show rotated status label
-- Inline issue creation per column:
-  - `+ Create` row
-  - Enter submit, Escape cancel
-  - optimistic cache insert via Query mutation
-  - toast success feedback
-- Drag-and-drop polish:
-  - placeholder slot indicator
-  - drag border emphasis
-  - <=200ms transition-based drop feedback
-  - optimistic status updates
-
-### Issue Card
-
-- Memoized enterprise-dense card
-- Issue type icon (task/bug/story heuristic)
-- Selection checkbox
-- Priority indicator icon
-- Hover actions menu (`...`)
-- Right-click context menu:
-  - Assign to me
-  - Change status
-  - Set priority
-  - Copy issue link
-- Assignee avatar with tooltip
-- Search highlight support for title matches
-
-### Command, Search, and Keyboard
-
-- Full command palette (`Cmd/Ctrl + K`) powered by `command.store.ts`
-  - fuzzy search
-  - keyboard navigation
-  - page navigation
-  - issue search
-  - project switching
-  - create issue
-  - open settings
-- Global shortcut engine (disabled inside input/textarea/contenteditable):
-  - `Cmd/Ctrl + K`
-  - `G` then `P` (Projects)
-  - `G` then `B` (Board)
-  - `G` then `A` (Activity)
-  - `C` (Create issue)
-  - `/` (focus global search)
-- Functional topbar global search dropdown (not modal):
-  - 200ms debounce
-  - grouped results: Issues, Projects, Members
-  - arrow key navigation + Enter to route
-
-### Realtime Simulation and Notifications
-
-- Deterministic realtime engine in `useRealtimeSimulation`:
-  - `setInterval` tick model
-  - event timing every 20-40 seconds
-  - mock data mutations through API/mock-backed arrays
-- Random issue updates generate activity feed events
-- Subtle activity pulse indicator
-- Notification integration:
-  - centralized notification store
-  - unread badge updates in sidebar
-  - click notification routes to target entity
-  - mark all read action
-
-### Project and UI Polish
-
-- Compact project header context:
-  - project avatar
-  - member preview avatars
-  - quick settings button
-  - share button (mock)
-- Professional neutral styling updates:
-  - subtle interaction transitions (<=250ms)
-  - hover brightness + border emphasis
-  - click feedback
-  - page enter transition (`opacity + translateY(8px -> 0)`)
-  - muted grey project header treatment
-
-### Loading, Accessibility, Performance
-
-- Skeleton loaders:
-  - board columns
-  - issue list
-  - activity feed
-- Accessibility improvements:
-  - keyboard-operable issue cards and menus
-  - visible focus rings
-  - ESC close behavior for overlays/search/command
-  - ARIA roles on search combobox/listbox/options
-- Performance:
-  - memoized issue card
-  - backlog virtualization (windowed rendering, no extra libs)
-  - stable keys maintained
-  - route-level `React.lazy` retained
-
-## Scripts
-
-- `npm run dev` - start dev server
-- `npm run build` - production build
-- `npm run preview` - preview production build
-- `npm run lint` - lint
-- `npm run test` - run tests
+- Frontend: React, TypeScript, Vite, Tailwind, shadcn/ui, TanStack Query, Zustand
+- Backend: Spring Boot 3, Java 17, in-memory repositories + JSON seed data
 
 ## Notes
 
-- Frontend only; no backend attached yet.
-- Replace API internals with real HTTP calls later while preserving UI/query contracts.
+- Data is in-memory after startup seed (not persisted DB yet).
+- To modify default mock data, edit only:
+  - `backend/jeerai-backend/src/main/resources/mock/mock-data.json`

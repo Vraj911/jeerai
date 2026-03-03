@@ -1,16 +1,22 @@
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { mockIssues, mockProjects, mockActivities } from '@/lib/mockAdapter';
 import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import { format } from 'date-fns';
+import { useIssues } from '@/queries/issue.queries';
+import { useProjects } from '@/queries/project.queries';
+import { useActivities } from '@/queries/activity.queries';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const assignedIssues = mockIssues.filter(
+  const { data: projects = [] } = useProjects();
+  const { data: issues = [] } = useIssues();
+  const { data: activities = [] } = useActivities();
+
+  const assignedIssues = issues.filter(
     (i) => i.assignee?.id === 'user-1' && i.status !== 'done'
   );
-  const recentActivities = mockActivities.slice(0, 5);
+  const recentActivities = activities.slice(0, 5);
 
   return (
     <PageContainer title="Dashboard">
@@ -18,7 +24,7 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-base font-medium mb-3">Recent Projects</h2>
           <div className="space-y-2">
-            {mockProjects.map((project) => (
+            {projects.map((project) => (
               <div
                 key={project.id}
                 onClick={() => navigate(ROUTES.PROJECT.OVERVIEW(project.id))}

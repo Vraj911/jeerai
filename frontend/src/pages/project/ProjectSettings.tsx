@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useParams } from 'react-router-dom';
 import { useProject, useUpdateProject } from '@/queries/project.queries';
-import { mockUsers } from '@/lib/mockAdapter';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
@@ -245,3 +244,4 @@ export default function ProjectSettings() {
     </PageContainer>
   );
 }
+

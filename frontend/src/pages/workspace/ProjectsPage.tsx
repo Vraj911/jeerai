@@ -3,18 +3,19 @@ import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { ProjectCard } from '@/features/projects/components/ProjectCard';
 import { ProjectCreateModal } from '@/features/projects/components/ProjectCreateModal';
-import { mockProjects } from '@/lib/mockAdapter';
 import { ROUTES } from '@/routes/routeConstants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
+import { useProjects } from '@/queries/project.queries';
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
+  const { data: projects = [] } = useProjects();
 
-  const filtered = mockProjects.filter(
+  const filtered = projects.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.key.toLowerCase().includes(search.toLowerCase())

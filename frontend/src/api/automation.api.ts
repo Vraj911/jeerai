@@ -1,43 +1,30 @@
-import { mockAutomationRules as initialRules } from '@/lib/mockAdapter';
+import { apiClient } from './client';
 import type { AutomationRule } from '@/types/automation';
-
-let rules = [...initialRules];
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export const automationApi = {
   getByProject: async (projectId: string): Promise<AutomationRule[]> => {
-    await delay(200);
-    return rules.filter((r) => r.projectId === projectId);
+    const { data } = await apiClient.get<AutomationRule[]>('/automation-rules', { params: { projectId } });
+    return data;
   },
 
-  create: async (data: Omit<AutomationRule, 'id' | 'createdAt'>): Promise<AutomationRule> => {
-    await delay(200);
-    const newRule: AutomationRule = {
-      ...data,
-      id: `auto-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    rules = [newRule, ...rules];
-    return newRule;
+  create: async (payload: Omit<AutomationRule, 'id' | 'createdAt'>): Promise<AutomationRule> => {
+    const { data } = await apiClient.post<AutomationRule>('/automation-rules', payload);
+    return data;
   },
 
-  update: async (id: string, data: Partial<AutomationRule>): Promise<AutomationRule> => {
-    await delay(150);
-    rules = rules.map((r) => (r.id === id ? { ...r, ...data } : r));
-    const updated = rules.find((r) => r.id === id);
-    if (!updated) throw new Error('Rule not found');
-    return updated;
+  update: async (id: string, payload: Partial<AutomationRule>): Promise<AutomationRule> => {
+    const { data } = await apiClient.patch<AutomationRule>(`/automation-rules/${id}`, payload);
+    return data;
   },
 
   delete: async (id: string): Promise<void> => {
-    await delay(100);
-    rules = rules.filter((r) => r.id !== id);
+    await apiClient.delete(`/automation-rules/${id}`);
   },
 
   toggle: async (id: string, enabled: boolean): Promise<AutomationRule> => {
-    return automationApi.update(id, { enabled });
+    const { data } = await apiClient.patch<AutomationRule>(`/automation-rules/${id}/toggle`, null, {
+      params: { enabled },
+    });
+    return data;
   },
 };

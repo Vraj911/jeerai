@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useIssue, useIssueComments, useUpdateIssue, useAddComment } from '@/queries/issue.queries';
+import { useUsers } from '@/queries/user.queries';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,6 @@ import {
 } from '@/components/ui/select';
 import { ArrowLeft } from 'lucide-react';
 import { STATUS_LABELS, PRIORITY_LABELS } from '@/lib/constants';
-import { mockUsers } from '@/lib/mockAdapter';
 import type { IssueStatus, IssuePriority } from '@/types/issue';
 import { format } from 'date-fns';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,6 +24,7 @@ export default function IssueDetailPage() {
   const { issueId } = useParams<{ issueId: string }>();
   const navigate = useNavigate();
   const { data: issue, isLoading } = useIssue(issueId ?? '');
+  const { data: users = [] } = useUsers();
   const updateIssue = useUpdateIssue();
   const addComment = useAddComment();
   const { data: comments } = useIssueComments(issueId ?? '');
@@ -55,7 +56,6 @@ export default function IssueDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
-        {/* Left column */}
         <div className="space-y-6">
           <h1 className="text-2xl font-semibold text-foreground">{issue.title}</h1>
 
@@ -73,8 +73,9 @@ export default function IssueDetailPage() {
               onSubmit={(e) => {
                 e.preventDefault();
                 if (!commentText.trim() || !issueId) return;
+                const currentUserId = users[0]?.id ?? 'user-1';
                 addComment.mutate(
-                  { issueId, content: commentText.trim(), authorId: mockUsers[0].id },
+                  { issueId, content: commentText.trim(), authorId: currentUserId },
                   {
                     onSuccess: () => {
                       toast({ title: 'Comment added', description: 'Your comment has been posted.' });
@@ -117,7 +118,6 @@ export default function IssueDetailPage() {
           </div>
         </div>
 
-        {/* Right column - metadata */}
         <div className="space-y-4">
           <div className="rounded-md border p-4 space-y-4">
             <div>
@@ -168,7 +168,7 @@ export default function IssueDetailPage() {
                 value={issue.assignee?.id ?? 'unassigned'}
                 onValueChange={(value) => {
                   const user =
-                    value === 'unassigned' ? null : mockUsers.find((u) => u.id === value) ?? null;
+                    value === 'unassigned' ? null : users.find((u) => u.id === value) ?? null;
                   updateIssue.mutate({ id: issue.id, data: { assignee: user } });
                 }}
               >
@@ -177,7 +177,7 @@ export default function IssueDetailPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {mockUsers.map((user) => (
+                  {users.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
                       {user.name}
                     </SelectItem>

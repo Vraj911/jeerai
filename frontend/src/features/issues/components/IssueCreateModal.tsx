@@ -16,7 +16,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useCreateIssue } from '@/queries/issue.queries';
-import { mockProjects, mockUsers } from '@/lib/mockAdapter';
+import { useProjects } from '@/queries/project.queries';
+import { useUsers } from '@/queries/user.queries';
 import { useToast } from '@/hooks/use-toast';
 import type { IssueStatus, IssuePriority } from '@/types/issue';
 
@@ -26,8 +27,10 @@ interface IssueCreateModalProps {
 }
 
 export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) {
+  const { data: projects = [] } = useProjects();
+  const { data: users = [] } = useUsers();
   const [title, setTitle] = useState('');
-  const [projectId, setProjectId] = useState(mockProjects[0].id);
+  const [projectId, setProjectId] = useState('proj-1');
   const [status, setStatus] = useState<IssueStatus>('todo');
   const [priority, setPriority] = useState<IssuePriority>('medium');
   const [assigneeId, setAssigneeId] = useState('unassigned');
@@ -46,7 +49,7 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
     const assignee =
       assigneeId === 'unassigned'
         ? null
-        : mockUsers.find((u) => u.id === assigneeId) ?? null;
+        : users.find((u) => u.id === assigneeId) ?? null;
     createIssue.mutate(
       { title, projectId, status, priority, assignee, labels },
       {
@@ -87,7 +90,7 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {mockProjects.map((p) => (
+                  {projects.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
                       {p.key}
                     </SelectItem>
@@ -132,7 +135,7 @@ export function IssueCreateModal({ open, onOpenChange }: IssueCreateModalProps) 
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
-                  {mockUsers.map((u) => (
+                  {users.map((u) => (
                     <SelectItem key={u.id} value={u.id}>
                       {u.name}
                     </SelectItem>
