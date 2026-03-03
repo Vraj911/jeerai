@@ -9,19 +9,19 @@ import org.springframework.stereotype.Service;
 import com.jeerai.backend.dto.AutomationRuleCreateRequest;
 import com.jeerai.backend.dto.AutomationRuleUpdateRequest;
 import com.jeerai.backend.model.AutomationRule;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.AutomationRuleRepository;
 
 @Service
 public class AutomationRuleService {
 
-    private final MockDataStore store;
+    private final AutomationRuleRepository automationRuleRepository;
 
-    public AutomationRuleService(MockDataStore store) {
-        this.store = store;
+    public AutomationRuleService(AutomationRuleRepository automationRuleRepository) {
+        this.automationRuleRepository = automationRuleRepository;
     }
 
     public List<AutomationRule> getByProject(String projectId) {
-        return store.findRules(projectId);
+        return automationRuleRepository.findByProjectId(projectId);
     }
 
     public AutomationRule create(AutomationRuleCreateRequest request) {
@@ -34,11 +34,11 @@ public class AutomationRuleService {
                 request.getAction(),
                 request.isEnabled(),
                 Instant.now());
-        return store.saveRule(rule);
+        return automationRuleRepository.save(rule);
     }
 
     public AutomationRule update(String id, AutomationRuleUpdateRequest updated) {
-        AutomationRule rule = store.findRuleById(id)
+        AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
 
         if (updated.getName() != null) rule.setName(updated.getName());
@@ -48,18 +48,18 @@ public class AutomationRuleService {
         if (updated.getAction() != null) rule.setAction(updated.getAction());
         if (updated.getEnabled() != null) rule.setEnabled(updated.getEnabled());
 
-        return store.saveRule(rule);
+        return automationRuleRepository.save(rule);
     }
 
     public void delete(String id) {
-        store.findRuleById(id).orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
-        store.deleteRule(id);
+        automationRuleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
+        automationRuleRepository.deleteById(id);
     }
 
     public AutomationRule toggle(String id, boolean enabled) {
-        AutomationRule rule = store.findRuleById(id)
+        AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
         rule.setEnabled(enabled);
-        return store.saveRule(rule);
+        return automationRuleRepository.save(rule);
     }
 }

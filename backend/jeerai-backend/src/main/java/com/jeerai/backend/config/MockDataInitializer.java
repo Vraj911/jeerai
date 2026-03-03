@@ -11,45 +11,66 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jeerai.backend.model.AutomationRule;
 import com.jeerai.backend.model.Project;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.ActivityRepository;
+import com.jeerai.backend.repository.AutomationRuleRepository;
+import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.NotificationRepository;
 import com.jeerai.backend.repository.ProjectRepository;
+import com.jeerai.backend.repository.SprintRepository;
+import com.jeerai.backend.repository.UserRepository;
 
 @Component
 public class MockDataInitializer implements ApplicationRunner {
 
     private final ProjectRepository projectRepository;
-    private final MockDataStore store;
+    private final UserRepository userRepository;
+    private final SprintRepository sprintRepository;
+    private final IssueRepository issueRepository;
+    private final ActivityRepository activityRepository;
+    private final NotificationRepository notificationRepository;
+    private final AutomationRuleRepository automationRuleRepository;
     private final ObjectMapper objectMapper;
 
-    public MockDataInitializer(ProjectRepository projectRepository, MockDataStore store, ObjectMapper objectMapper) {
+    public MockDataInitializer(
+            ProjectRepository projectRepository,
+            UserRepository userRepository,
+            SprintRepository sprintRepository,
+            IssueRepository issueRepository,
+            ActivityRepository activityRepository,
+            NotificationRepository notificationRepository,
+            AutomationRuleRepository automationRuleRepository,
+            ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
-        this.store = store;
+        this.userRepository = userRepository;
+        this.sprintRepository = sprintRepository;
+        this.issueRepository = issueRepository;
+        this.activityRepository = activityRepository;
+        this.notificationRepository = notificationRepository;
+        this.automationRuleRepository = automationRuleRepository;
         this.objectMapper = objectMapper;
     }
 
     @Override
     public void run(ApplicationArguments args) {
-        if (!store.isEmpty()) {
+        if (!userRepository.findAll().isEmpty()) {
             return;
         }
 
         MockDataPayload payload = loadPayload();
 
-        safe(payload.getUsers()).forEach(store::saveUser);
+        safe(payload.getUsers()).forEach(userRepository::save);
 
         for (Project project : safe(payload.getProjects())) {
-            store.saveProject(project);
             projectRepository.save(project);
         }
 
-        safe(payload.getSprints()).forEach(store::saveSprint);
-        safe(payload.getIssues()).forEach(store::saveIssue);
-        safe(payload.getComments()).forEach(store::saveComment);
-        safe(payload.getActivities()).forEach(store::saveActivity);
-        safe(payload.getNotifications()).forEach(store::saveNotification);
-        safe(payload.getAutomationRules()).forEach(store::saveRule);
+        safe(payload.getSprints()).forEach(sprintRepository::save);
+        safe(payload.getIssues()).forEach(issueRepository::save);
+        safe(payload.getComments()).forEach(issueRepository::saveComment);
+        safe(payload.getActivities()).forEach(activityRepository::save);
+        safe(payload.getNotifications()).forEach(notificationRepository::save);
+        safe(payload.getAutomationRules()).forEach(automationRuleRepository::save);
     }
 
     private MockDataPayload loadPayload() {

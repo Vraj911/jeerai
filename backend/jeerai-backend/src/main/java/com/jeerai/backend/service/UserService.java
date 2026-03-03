@@ -5,22 +5,22 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.model.User;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.UserRepository;
 
 @Service
 public class UserService {
 
-    private final MockDataStore store;
+    private final UserRepository userRepository;
 
-    public UserService(MockDataStore store) {
-        this.store = store;
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public List<User> getAll() {
-        return store.findAllUsers();
+        return userRepository.findAll();
     }
 
     public User getById(String id) {
-        return store.findUserById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
+        return userRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 }

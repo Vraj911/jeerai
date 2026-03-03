@@ -8,19 +8,19 @@ import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.dto.AnalyticsDataDto;
 import com.jeerai.backend.model.Issue;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.IssueRepository;
 
 @Service
 public class AnalyticsService {
 
-    private final MockDataStore store;
+    private final IssueRepository issueRepository;
 
-    public AnalyticsService(MockDataStore store) {
-        this.store = store;
+    public AnalyticsService(IssueRepository issueRepository) {
+        this.issueRepository = issueRepository;
     }
 
     public AnalyticsDataDto getProjectAnalytics(String projectId) {
-        List<Issue> projectIssues = store.findIssues(projectId);
+        List<Issue> projectIssues = issueRepository.findByProjectId(projectId);
 
         List<AnalyticsDataDto.StatusCount> statusCounts = List.of("todo", "in-progress", "review", "done").stream()
                 .map(status -> new AnalyticsDataDto.StatusCount(

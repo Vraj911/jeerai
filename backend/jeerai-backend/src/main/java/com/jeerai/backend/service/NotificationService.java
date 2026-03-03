@@ -5,18 +5,18 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.model.AppNotification;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.NotificationRepository;
 
 @Service
 public class NotificationService {
 
-    private final MockDataStore store;
+    private final NotificationRepository notificationRepository;
 
-    public NotificationService(MockDataStore store) {
-        this.store = store;
+    public NotificationService(NotificationRepository notificationRepository) {
+        this.notificationRepository = notificationRepository;
     }
 
     public List<AppNotification> getAll() {
-        return store.findAllNotifications();
+        return notificationRepository.findAll();
     }
 }

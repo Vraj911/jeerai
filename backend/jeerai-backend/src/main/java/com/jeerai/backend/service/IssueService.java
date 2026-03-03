@@ -15,7 +15,9 @@ import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.User;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.ProjectRepository;
+import com.jeerai.backend.repository.UserRepository;
 
 @Service
 public class IssueService {
@@ -23,33 +25,41 @@ public class IssueService {
     private static final List<String> STATUS_FLOW = List.of("todo", "in-progress", "review", "done");
     private static final List<String> PRIORITY_FLOW = List.of("highest", "high", "medium", "low", "lowest");
 
-    private final MockDataStore store;
+    private final IssueRepository issueRepository;
+    private final ProjectRepository projectRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
-    public IssueService(MockDataStore store, ObjectMapper objectMapper) {
-        this.store = store;
+    public IssueService(
+            IssueRepository issueRepository,
+            ProjectRepository projectRepository,
+            UserRepository userRepository,
+            ObjectMapper objectMapper) {
+        this.issueRepository = issueRepository;
+        this.projectRepository = projectRepository;
+        this.userRepository = userRepository;
         this.objectMapper = objectMapper;
     }
 
     public List<Issue> getAll(String projectId) {
-        return store.findIssues(projectId);
+        return projectId == null ? issueRepository.findAll() : issueRepository.findByProjectId(projectId);
     }
 
     public Issue getById(String id) {
-        return store.findIssueById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        return issueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
     }
 
     public Issue create(IssueCreateRequest data) {
         String projectId = data.getProjectId() == null ? "proj-1" : data.getProjectId();
-        Project project = store.findProjectById(projectId)
+        Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
-        long existing = store.findIssues(projectId).size();
+        long existing = issueRepository.findByProjectId(projectId).size();
         String issueId = "issue-" + System.currentTimeMillis();
 
         User reporter = data.getReporter();
         if (reporter == null) {
-            reporter = store.findUserById("user-1").orElse(null);
+            reporter = userRepository.findById("user-1").orElse(null);
         }
 
         Issue issue = new Issue(
@@ -67,7 +77,7 @@ public class IssueService {
                 projectId,
                 data.getSprintId());
 
-        return store.saveIssue(issue);
+        return issueRepository.save(issue);
     }
 
     public Issue update(String id, JsonNode data) {
@@ -84,25 +94,25 @@ public class IssueService {
         if (data.has("sprintId")) issue.setSprintId(readNullableString(data, "sprintId"));
 
         issue.setUpdatedAt(Instant.now());
-        return store.saveIssue(issue);
+        return issueRepository.save(issue);
     }
 
     public Issue updateStatus(String id, String status) {
         Issue issue = getById(id);
         issue.setStatus(status);
         issue.setUpdatedAt(Instant.now());
-        return store.saveIssue(issue);
+        return issueRepository.save(issue);
     }
 
     public List<IssueComment> getComments(String issueId) {
         getById(issueId);
-        return store.findCommentsByIssueId(issueId);
+        return issueRepository.findCommentsByIssueId(issueId);
     }
 
     public IssueComment addComment(String issueId, AddCommentRequest request) {
         getById(issueId);
-        User author = store.findUserById(request.getAuthorId())
-                .orElseGet(() -> store.findUserById("user-1").orElse(null));
+        User author = userRepository.findById(request.getAuthorId())
+                .orElseGet(() -> userRepository.findById("user-1").orElse(null));
 
         IssueComment comment = new IssueComment(
                 "comment-" + System.currentTimeMillis(),
@@ -111,11 +121,11 @@ public class IssueService {
                 request.getContent(),
                 Instant.now());
 
-        return store.saveComment(comment);
+        return issueRepository.saveComment(comment);
     }
 
     public Issue simulateRandomUpdate(Double randomValue) {
-        List<Issue> allIssues = store.findIssues(null);
+        List<Issue> allIssues = issueRepository.findAll();
         if (allIssues.isEmpty()) {
             throw new ResourceNotFoundException("No issues found");
         }
@@ -134,7 +144,7 @@ public class IssueService {
         issue.setStatus(flipPriority ? issue.getStatus() : nextStatus);
         issue.setPriority(flipPriority ? nextPriority : issue.getPriority());
         issue.setUpdatedAt(Instant.now());
-        return store.saveIssue(issue);
+        return issueRepository.save(issue);
     }
 
     private String readNullableString(JsonNode node, String key) {

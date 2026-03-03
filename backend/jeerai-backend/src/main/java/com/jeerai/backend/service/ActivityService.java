@@ -9,23 +9,32 @@ import com.jeerai.backend.dto.ActivityFromIssueUpdateRequest;
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.User;
-import com.jeerai.backend.repository.MockDataStore;
+import com.jeerai.backend.repository.ActivityRepository;
+import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.UserRepository;
 
 @Service
 public class ActivityService {
 
-    private final MockDataStore store;
+    private final ActivityRepository activityRepository;
+    private final IssueRepository issueRepository;
+    private final UserRepository userRepository;
 
-    public ActivityService(MockDataStore store) {
-        this.store = store;
+    public ActivityService(
+            ActivityRepository activityRepository,
+            IssueRepository issueRepository,
+            UserRepository userRepository) {
+        this.activityRepository = activityRepository;
+        this.issueRepository = issueRepository;
+        this.userRepository = userRepository;
     }
 
     public List<Activity> getAll() {
-        return store.findActivities(null);
+        return activityRepository.findAll();
     }
 
     public List<Activity> getByProject(String projectId) {
-        return store.findActivities(projectId);
+        return activityRepository.findByProjectId(projectId);
     }
 
     public Activity add(Activity activity) {
@@ -33,14 +42,14 @@ public class ActivityService {
         if (activity.getCreatedAt() == null) {
             activity.setCreatedAt(Instant.now());
         }
-        return store.saveActivity(activity);
+        return activityRepository.save(activity);
     }
 
     public Activity addFromIssueUpdate(ActivityFromIssueUpdateRequest request) {
-        Issue issue = store.findIssueById(request.getIssueId())
+        Issue issue = issueRepository.findById(request.getIssueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
-        List<User> users = store.findAllUsers();
+        List<User> users = userRepository.findAll();
         if (users.isEmpty()) {
             throw new ResourceNotFoundException("No users found");
         }
@@ -74,6 +83,6 @@ public class ActivityService {
                 Instant.now(),
                 issue.getProjectId());
 
-        return store.saveActivity(activity);
+        return activityRepository.save(activity);
     }
 }
