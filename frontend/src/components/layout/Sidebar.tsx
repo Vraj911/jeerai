@@ -31,7 +31,8 @@ export function Sidebar() {
   const { notifications } = useNotificationStore();
   const { theme } = useThemeStore();
   const location = useLocation();
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
+  const unreadCount = safeNotifications.filter((n) => !n.read).length;
 
   const navItems: NavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.APP.DASHBOARD },
@@ -142,3 +143,4 @@ export function Sidebar() {
     </aside>
   );
 }
+

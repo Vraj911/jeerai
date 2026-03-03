@@ -7,9 +7,11 @@ export function NotificationBootstrap() {
   const setNotifications = useNotificationStore((s) => s.setNotifications);
 
   useEffect(() => {
-    if (data) {
+    if (Array.isArray(data)) {
       setNotifications(data);
+      return;
     }
+    setNotifications([]);
   }, [data, setNotifications]);
 
   return null;

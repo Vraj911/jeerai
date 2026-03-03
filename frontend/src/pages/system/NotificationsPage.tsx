@@ -11,8 +11,9 @@ import { useNotificationStore } from '@/store/notification.store';
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const { notifications, markAllRead, markRead } = useNotificationStore();
+  const safeNotifications = Array.isArray(notifications) ? notifications : [];
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const unreadCount = safeNotifications.filter((n) => !n.read).length;
 
   return (
     <PageContainer
@@ -32,14 +33,14 @@ export default function NotificationsPage() {
         </TabsList>
         <TabsContent value="all" className="mt-4">
           <NotificationList
-            items={notifications}
+            items={safeNotifications}
             onRead={markRead}
             onNavigate={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
           />
         </TabsContent>
         <TabsContent value="unread" className="mt-4">
           <NotificationList
-            items={notifications.filter((n) => !n.read)}
+            items={safeNotifications.filter((n) => !n.read)}
             onRead={markRead}
             onNavigate={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
           />
