@@ -1,13 +1,12 @@
-package com.jeerai.jeerai_backend;
+package com.jeerai.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(classes = JeeraiBackendApplication.class)
 class JeeraiBackendApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void contextLoads() {
+    }
 }
