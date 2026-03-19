@@ -2,8 +2,6 @@ package com.jeerai.backend.model;
 
 import java.time.Instant;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,12 +9,13 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class User {
+public class Invitation {
     private String id;
-    private String name;
+    private String workspaceId;
     private String email;
-    @JsonIgnore
-    private String passwordHash;
-    @JsonIgnore
+    private WorkspaceRole role;
+    private String token;
+    private InvitationStatus status;
+    private Instant expiresAt;
     private Instant createdAt;
 }

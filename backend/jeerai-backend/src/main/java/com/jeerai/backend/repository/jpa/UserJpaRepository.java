@@ -9,4 +9,6 @@ import com.jeerai.backend.entity.UserEntity;
 
 public interface UserJpaRepository extends JpaRepository<UserEntity, UUID> {
     Optional<UserEntity> findByPublicId(String publicId);
+
+    Optional<UserEntity> findByEmailIgnoreCase(String email);
 }

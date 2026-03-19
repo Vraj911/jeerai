@@ -17,6 +17,9 @@ import com.jeerai.backend.model.IssueComment;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.Sprint;
 import com.jeerai.backend.model.User;
+import com.jeerai.backend.model.Invitation;
+import com.jeerai.backend.model.Workspace;
+import com.jeerai.backend.model.WorkspaceMember;
 
 @Repository
 public class MockDataStore {
@@ -29,6 +32,9 @@ public class MockDataStore {
     private final Map<String, Activity> activities = new ConcurrentHashMap<>();
     private final Map<String, AutomationRule> rules = new ConcurrentHashMap<>();
     private final Map<String, AppNotification> notifications = new ConcurrentHashMap<>();
+    private final Map<String, Workspace> workspaces = new ConcurrentHashMap<>();
+    private final Map<String, WorkspaceMember> workspaceMembers = new ConcurrentHashMap<>();
+    private final Map<String, Invitation> invitations = new ConcurrentHashMap<>();
 
     public void clearAll() {
         users.clear();
@@ -39,12 +45,16 @@ public class MockDataStore {
         activities.clear();
         rules.clear();
         notifications.clear();
+        workspaces.clear();
+        workspaceMembers.clear();
+        invitations.clear();
     }
 
     public boolean isEmpty() {
         return users.isEmpty() && projects.isEmpty() && sprints.isEmpty()
                 && issues.isEmpty() && comments.isEmpty() && activities.isEmpty()
-                && rules.isEmpty() && notifications.isEmpty();
+                && rules.isEmpty() && notifications.isEmpty()
+                && workspaces.isEmpty() && workspaceMembers.isEmpty() && invitations.isEmpty();
     }
 
     public User saveUser(User user) {
@@ -58,6 +68,15 @@ public class MockDataStore {
 
     public Optional<User> findUserById(String id) {
         return Optional.ofNullable(users.get(id));
+    }
+
+    public Optional<User> findUserByEmail(String email) {
+        if (email == null) {
+            return Optional.empty();
+        }
+        return users.values().stream()
+                .filter(user -> email.equalsIgnoreCase(user.getEmail()))
+                .findFirst();
     }
 
     public Project saveProject(Project project) {
@@ -154,5 +173,75 @@ public class MockDataStore {
         return notifications.values().stream()
                 .sorted(Comparator.comparing(AppNotification::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
+    }
+
+    public Workspace saveWorkspace(Workspace workspace) {
+        workspaces.put(workspace.getId(), workspace);
+        return workspace;
+    }
+
+    public List<Workspace> findAllWorkspaces() {
+        return workspaces.values().stream()
+                .sorted(Comparator.comparing(Workspace::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public Optional<Workspace> findWorkspaceById(String id) {
+        return Optional.ofNullable(workspaces.get(id));
+    }
+
+    public WorkspaceMember saveWorkspaceMember(WorkspaceMember member) {
+        workspaceMembers.put(member.getId(), member);
+        return member;
+    }
+
+    public List<WorkspaceMember> findWorkspaceMembersByWorkspaceId(String workspaceId) {
+        return workspaceMembers.values().stream()
+                .filter(member -> workspaceId.equals(member.getWorkspaceId()))
+                .sorted(Comparator.comparing(WorkspaceMember::getJoinedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    public List<WorkspaceMember> findWorkspaceMembersByUserId(String userId) {
+        return workspaceMembers.values().stream()
+                .filter(member -> userId.equals(member.getUserId()))
+                .sorted(Comparator.comparing(WorkspaceMember::getJoinedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    public Optional<WorkspaceMember> findWorkspaceMemberById(String id) {
+        return Optional.ofNullable(workspaceMembers.get(id));
+    }
+
+    public Optional<WorkspaceMember> findWorkspaceMemberByWorkspaceIdAndUserId(String workspaceId, String userId) {
+        return workspaceMembers.values().stream()
+                .filter(member -> workspaceId.equals(member.getWorkspaceId()) && userId.equals(member.getUserId()))
+                .findFirst();
+    }
+
+    public void deleteWorkspaceMember(String id) {
+        workspaceMembers.remove(id);
+    }
+
+    public Invitation saveInvitation(Invitation invitation) {
+        invitations.put(invitation.getId(), invitation);
+        return invitation;
+    }
+
+    public List<Invitation> findInvitationsByWorkspaceId(String workspaceId) {
+        return invitations.values().stream()
+                .filter(invitation -> workspaceId.equals(invitation.getWorkspaceId()))
+                .sorted(Comparator.comparing(Invitation::getCreatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
+                .toList();
+    }
+
+    public Optional<Invitation> findInvitationById(String id) {
+        return Optional.ofNullable(invitations.get(id));
+    }
+
+    public Optional<Invitation> findInvitationByToken(String token) {
+        return invitations.values().stream()
+                .filter(invitation -> token.equals(invitation.getToken()))
+                .findFirst();
     }
 }

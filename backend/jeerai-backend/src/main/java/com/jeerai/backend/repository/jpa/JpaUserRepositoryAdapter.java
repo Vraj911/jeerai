@@ -36,6 +36,12 @@ public class JpaUserRepositoryAdapter implements UserRepository {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<User> findByEmail(String email) {
+        return userJpaRepository.findByEmailIgnoreCase(email).map(mapper::toModel);
+    }
+
+    @Override
     public User save(User user) {
         return mapper.toModel(userJpaRepository.save(mapper.toEntity(user)));
     }

@@ -29,6 +29,11 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        return store.findUserByEmail(email);
+    }
+
+    @Override
     public User save(User user) {
         return store.saveUser(user);
     }

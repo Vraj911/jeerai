@@ -56,6 +56,10 @@ public class ProjectEntity {
             inverseJoinColumns = @JoinColumn(name = "user_id"))
     private Set<UserEntity> members = new HashSet<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id")
+    private WorkspaceEntity workspace;
+
     @Column(name = "created_at")
     private Instant createdAt;
 

@@ -4,26 +4,34 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import com.jeerai.backend.entity.ActivityEntity;
 import com.jeerai.backend.entity.AutomationRuleEntity;
 import com.jeerai.backend.entity.IssueCommentEntity;
 import com.jeerai.backend.entity.IssueEntity;
+import com.jeerai.backend.entity.InvitationEntity;
 import com.jeerai.backend.entity.NotificationEntity;
 import com.jeerai.backend.entity.ProjectEntity;
 import com.jeerai.backend.entity.SprintEntity;
 import com.jeerai.backend.entity.UserEntity;
+import com.jeerai.backend.entity.WorkspaceEntity;
+import com.jeerai.backend.entity.WorkspaceMemberEntity;
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.model.AppNotification;
 import com.jeerai.backend.model.AutomationRule;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
+import com.jeerai.backend.model.Invitation;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.Sprint;
 import com.jeerai.backend.model.User;
+import com.jeerai.backend.model.Workspace;
+import com.jeerai.backend.model.WorkspaceMember;
 
 @Component
+@Profile("postgres")
 public class JpaRepositoryMapper {
 
     private final UserJpaRepository userJpaRepository;
@@ -34,6 +42,9 @@ public class JpaRepositoryMapper {
     private final ActivityJpaRepository activityJpaRepository;
     private final NotificationJpaRepository notificationJpaRepository;
     private final AutomationRuleJpaRepository automationRuleJpaRepository;
+    private final WorkspaceJpaRepository workspaceJpaRepository;
+    private final WorkspaceMemberJpaRepository workspaceMemberJpaRepository;
+    private final InvitationJpaRepository invitationJpaRepository;
 
     public JpaRepositoryMapper(
             UserJpaRepository userJpaRepository,
@@ -43,7 +54,10 @@ public class JpaRepositoryMapper {
             IssueCommentJpaRepository issueCommentJpaRepository,
             ActivityJpaRepository activityJpaRepository,
             NotificationJpaRepository notificationJpaRepository,
-            AutomationRuleJpaRepository automationRuleJpaRepository) {
+            AutomationRuleJpaRepository automationRuleJpaRepository,
+            WorkspaceJpaRepository workspaceJpaRepository,
+            WorkspaceMemberJpaRepository workspaceMemberJpaRepository,
+            InvitationJpaRepository invitationJpaRepository) {
         this.userJpaRepository = userJpaRepository;
         this.projectJpaRepository = projectJpaRepository;
         this.sprintJpaRepository = sprintJpaRepository;
@@ -52,13 +66,16 @@ public class JpaRepositoryMapper {
         this.activityJpaRepository = activityJpaRepository;
         this.notificationJpaRepository = notificationJpaRepository;
         this.automationRuleJpaRepository = automationRuleJpaRepository;
+        this.workspaceJpaRepository = workspaceJpaRepository;
+        this.workspaceMemberJpaRepository = workspaceMemberJpaRepository;
+        this.invitationJpaRepository = invitationJpaRepository;
     }
 
     public User toModel(UserEntity entity) {
         if (entity == null) {
             return null;
         }
-        return new User(entity.getPublicId(), entity.getName(), entity.getEmail());
+        return new User(entity.getPublicId(), entity.getName(), entity.getEmail(), entity.getPasswordHash(), entity.getCreatedAt());
     }
 
     public UserEntity toEntity(User model) {
@@ -73,6 +90,8 @@ public class JpaRepositoryMapper {
         entity.setPublicId(valueOrGenerated(model.getId(), "user"));
         entity.setName(model.getName());
         entity.setEmail(model.getEmail());
+        entity.setPasswordHash(model.getPasswordHash());
+        entity.setCreatedAt(model.getCreatedAt() == null ? java.time.Instant.now() : model.getCreatedAt());
         return entity;
     }
 
@@ -88,7 +107,8 @@ public class JpaRepositoryMapper {
                 toModel(entity.getLead()),
                 entity.getMembers() == null ? List.of() : entity.getMembers().stream().map(this::toModel).toList(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.getWorkspace() == null ? null : entity.getWorkspace().getId().toString());
     }
 
     public ProjectEntity toEntity(Project model) {
@@ -108,8 +128,97 @@ public class JpaRepositoryMapper {
         entity.setMembers(model.getMembers() == null
                 ? new java.util.HashSet<>()
                 : new java.util.HashSet<>(model.getMembers().stream().map(this::resolveUser).toList()));
+        entity.setWorkspace(resolveWorkspace(model.getWorkspaceId()));
         entity.setCreatedAt(model.getCreatedAt());
         entity.setUpdatedAt(model.getUpdatedAt());
+        return entity;
+    }
+
+    public Workspace toModel(WorkspaceEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new Workspace(
+                entity.getId().toString(),
+                entity.getName(),
+                entity.getOwner() == null ? null : entity.getOwner().getPublicId(),
+                entity.getCreatedAt());
+    }
+
+    public WorkspaceEntity toEntity(Workspace model) {
+        if (model == null) {
+            return null;
+        }
+
+        WorkspaceEntity entity = model.getId() == null
+                ? new WorkspaceEntity()
+                : workspaceJpaRepository.findById(UUID.fromString(model.getId())).orElseGet(WorkspaceEntity::new);
+
+        entity.setName(model.getName());
+        entity.setOwner(resolveUserByPublicId(model.getOwnerId()));
+        entity.setCreatedAt(model.getCreatedAt());
+        return entity;
+    }
+
+    public WorkspaceMember toModel(WorkspaceMemberEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new WorkspaceMember(
+                entity.getId().toString(),
+                entity.getWorkspace() == null ? null : entity.getWorkspace().getId().toString(),
+                entity.getUser() == null ? null : entity.getUser().getPublicId(),
+                entity.getRole(),
+                entity.getJoinedAt());
+    }
+
+    public WorkspaceMemberEntity toEntity(WorkspaceMember model) {
+        if (model == null) {
+            return null;
+        }
+
+        WorkspaceMemberEntity entity = model.getId() == null
+                ? new WorkspaceMemberEntity()
+                : workspaceMemberJpaRepository.findById(UUID.fromString(model.getId())).orElseGet(WorkspaceMemberEntity::new);
+
+        entity.setWorkspace(resolveWorkspaceByUuid(model.getWorkspaceId()));
+        entity.setUser(resolveUserByPublicId(model.getUserId()));
+        entity.setRole(model.getRole());
+        entity.setJoinedAt(model.getJoinedAt());
+        return entity;
+    }
+
+    public Invitation toModel(InvitationEntity entity) {
+        if (entity == null) {
+            return null;
+        }
+        return new Invitation(
+                entity.getId().toString(),
+                entity.getWorkspace() == null ? null : entity.getWorkspace().getId().toString(),
+                entity.getEmail(),
+                entity.getRole(),
+                entity.getToken(),
+                entity.getStatus(),
+                entity.getExpiresAt(),
+                entity.getCreatedAt());
+    }
+
+    public InvitationEntity toEntity(Invitation model) {
+        if (model == null) {
+            return null;
+        }
+
+        InvitationEntity entity = model.getId() == null
+                ? new InvitationEntity()
+                : invitationJpaRepository.findById(UUID.fromString(model.getId())).orElseGet(InvitationEntity::new);
+
+        entity.setWorkspace(resolveWorkspaceByUuid(model.getWorkspaceId()));
+        entity.setEmail(model.getEmail());
+        entity.setRole(model.getRole());
+        entity.setToken(model.getToken());
+        entity.setStatus(model.getStatus());
+        entity.setExpiresAt(model.getExpiresAt());
+        entity.setCreatedAt(model.getCreatedAt());
         return entity;
     }
 
@@ -373,6 +482,26 @@ public class JpaRepositoryMapper {
         }
         return issueJpaRepository.findByPublicId(issueId)
                 .orElseThrow(() -> new IllegalArgumentException("Issue not found: " + issueId));
+    }
+
+    private WorkspaceEntity resolveWorkspace(String workspaceId) {
+        if (workspaceId == null || workspaceId.isBlank()) {
+            return null;
+        }
+        return resolveWorkspaceByUuid(workspaceId);
+    }
+
+    private WorkspaceEntity resolveWorkspaceByUuid(String workspaceId) {
+        return workspaceJpaRepository.findById(UUID.fromString(workspaceId))
+                .orElseThrow(() -> new IllegalArgumentException("Workspace not found: " + workspaceId));
+    }
+
+    private UserEntity resolveUserByPublicId(String userId) {
+        if (userId == null || userId.isBlank()) {
+            return null;
+        }
+        return userJpaRepository.findByPublicId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
     }
 
     private String valueOrGenerated(String value, String prefix) {

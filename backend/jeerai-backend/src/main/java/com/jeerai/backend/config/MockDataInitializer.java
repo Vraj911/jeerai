@@ -12,13 +12,17 @@ import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeerai.backend.model.Project;
+import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.ActivityRepository;
 import com.jeerai.backend.repository.AutomationRuleRepository;
 import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.InvitationRepository;
 import com.jeerai.backend.repository.NotificationRepository;
 import com.jeerai.backend.repository.ProjectRepository;
 import com.jeerai.backend.repository.SprintRepository;
 import com.jeerai.backend.repository.UserRepository;
+import com.jeerai.backend.repository.WorkspaceMemberRepository;
+import com.jeerai.backend.repository.WorkspaceRepository;
 
 @Component
 public class MockDataInitializer implements ApplicationRunner {
@@ -30,6 +34,9 @@ public class MockDataInitializer implements ApplicationRunner {
     private final ActivityRepository activityRepository;
     private final NotificationRepository notificationRepository;
     private final AutomationRuleRepository automationRuleRepository;
+    private final WorkspaceRepository workspaceRepository;
+    private final WorkspaceMemberRepository workspaceMemberRepository;
+    private final InvitationRepository invitationRepository;
     private final ObjectMapper objectMapper;
 
     public MockDataInitializer(
@@ -40,6 +47,9 @@ public class MockDataInitializer implements ApplicationRunner {
             ActivityRepository activityRepository,
             NotificationRepository notificationRepository,
             AutomationRuleRepository automationRuleRepository,
+            WorkspaceRepository workspaceRepository,
+            WorkspaceMemberRepository workspaceMemberRepository,
+            InvitationRepository invitationRepository,
             ObjectMapper objectMapper) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
@@ -48,6 +58,9 @@ public class MockDataInitializer implements ApplicationRunner {
         this.activityRepository = activityRepository;
         this.notificationRepository = notificationRepository;
         this.automationRuleRepository = automationRuleRepository;
+        this.workspaceRepository = workspaceRepository;
+        this.workspaceMemberRepository = workspaceMemberRepository;
+        this.invitationRepository = invitationRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -71,6 +84,7 @@ public class MockDataInitializer implements ApplicationRunner {
         safe(payload.getActivities()).forEach(activityRepository::save);
         safe(payload.getNotifications()).forEach(notificationRepository::save);
         safe(payload.getAutomationRules()).forEach(automationRuleRepository::save);
+        seedDefaultWorkspaceIfNeeded();
     }
 
     private MockDataPayload loadPayload() {
@@ -84,5 +98,47 @@ public class MockDataInitializer implements ApplicationRunner {
 
     private <T> List<T> safe(List<T> items) {
         return items == null ? Collections.emptyList() : items;
+    }
+
+    private void seedDefaultWorkspaceIfNeeded() {
+        if (!workspaceRepository.findAll().isEmpty()) {
+            return;
+        }
+
+        List<com.jeerai.backend.model.User> users = userRepository.findAll();
+        if (users.isEmpty()) {
+            return;
+        }
+
+        com.jeerai.backend.model.User owner = users.get(0);
+        com.jeerai.backend.model.Workspace workspace = workspaceRepository.save(
+                new com.jeerai.backend.model.Workspace(
+                        java.util.UUID.randomUUID().toString(),
+                        "Jeerai Workspace",
+                        owner.getId(),
+                        java.time.Instant.now()));
+
+        workspaceMemberRepository.save(new com.jeerai.backend.model.WorkspaceMember(
+                java.util.UUID.randomUUID().toString(),
+                workspace.getId(),
+                owner.getId(),
+                WorkspaceRole.OWNER,
+                java.time.Instant.now()));
+
+        users.stream()
+                .filter(user -> !owner.getId().equals(user.getId()))
+                .forEach(user -> workspaceMemberRepository.save(new com.jeerai.backend.model.WorkspaceMember(
+                        java.util.UUID.randomUUID().toString(),
+                        workspace.getId(),
+                        user.getId(),
+                        WorkspaceRole.MEMBER,
+                        java.time.Instant.now())));
+
+        projectRepository.findAll().forEach(project -> {
+            if (project.getWorkspaceId() == null) {
+                project.setWorkspaceId(workspace.getId());
+                projectRepository.save(project);
+            }
+        });
     }
 }
