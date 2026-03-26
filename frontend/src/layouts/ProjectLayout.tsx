@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Settings, Share2 } from 'lucide-react';
 import { ROUTES } from '@/routes/routeConstants';
 import { useProject } from '@/queries/project.queries';
+import { useToast } from '@/hooks/use-toast';
 
 const projectTabs = [
   { label: 'Overview', path: '' },
@@ -13,13 +14,37 @@ const projectTabs = [
   { label: 'Issues', path: '/issues' },
   { label: 'Analytics', path: '/analytics' },
   { label: 'Automation', path: '/automation' },
-  { label: 'Settings', path: '/settings' },
 ];
 
 export function ProjectLayout() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project } = useProject(projectId ?? '');
+  const { toast } = useToast();
   const basePath = `/app/projects/${projectId}`;
+
+  const handleShare = async () => {
+    if (!projectId) {
+      return;
+    }
+
+    const shareUrl = `${window.location.origin}${basePath}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: project?.name ?? 'Project',
+          text: `Open ${project?.name ?? 'this project'} in Jeerai`,
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({ title: 'Project link copied', description: shareUrl });
+      }
+    } catch (error) {
+      if ((error as Error)?.name !== 'AbortError') {
+        toast({ title: 'Share failed', description: 'Unable to share the project link.', variant: 'destructive' });
+      }
+    }
+  };
 
   return (
     <div className="flex flex-col h-full">
@@ -61,7 +86,7 @@ export function ProjectLayout() {
                 Settings
               </NavLink>
             </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs">
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => void handleShare()}>
               <Share2 className="h-3.5 w-3.5 mr-1" />
               Share
             </Button>

@@ -3,10 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   useIssues,
   useUpdateIssueStatus,
-  useCreateIssue,
   useUpdateIssue,
 } from '@/queries/issue.queries';
 import { IssueCard } from '@/features/issues/components/IssueCard';
+import { IssueCreateModal } from '@/features/issues/components/IssueCreateModal';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { STATUS_LABELS } from '@/lib/constants';
 import { ROUTES } from '@/routes/routeConstants';
@@ -16,8 +16,6 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUsers } from '@/queries/user.queries';
 import { BoardControlBar, type BoardViewSettings, type QuickFiltersState } from '@/pages/project/components/BoardControlBar';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useUIStore } from '@/store/ui.store';
 import {
@@ -38,7 +36,6 @@ export default function BoardPage() {
   const { toast } = useToast();
   const { data: issues, isLoading } = useIssues(projectId);
   const updateStatus = useUpdateIssueStatus();
-  const createIssue = useCreateIssue();
   const updateIssue = useUpdateIssue();
   const { data: users = [] } = useUsers();
 
@@ -58,10 +55,7 @@ export default function BoardPage() {
     showPriority: true,
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [inlineCreate, setInlineCreate] = useState<{ status: IssueStatus | null; title: string }>({
-    status: null,
-    title: '',
-  });
+  const [createModalStatus, setCreateModalStatus] = useState<IssueStatus | null>(null);
 
   const { collapsedBoardColumns, toggleBoardColumnCollapsed } = useUIStore();
 
@@ -118,26 +112,6 @@ export default function BoardPage() {
     },
     [updateStatus]
   );
-
-  const handleInlineCreate = (status: IssueStatus) => {
-    const title = inlineCreate.title.trim();
-    if (!title || !projectId) return;
-    createIssue.mutate(
-      {
-        title,
-        status,
-        projectId,
-        priority: 'medium',
-        assignee: null,
-      },
-      {
-        onSuccess: () => {
-          toast({ title: 'Issue created', description: `Added "${title}"` });
-          setInlineCreate({ status: null, title: '' });
-        },
-      }
-    );
-  };
 
   const updateIssueField = (issue: Issue, data: Partial<Issue>) => {
     updateIssue.mutate({ id: issue.id, data });
@@ -289,53 +263,32 @@ export default function BoardPage() {
                     </div>
                   )}
 
-                  {inlineCreate.status === status ? (
-                    <div className="rounded-md border bg-card p-2">
-                      <Input
-                        autoFocus
-                        value={inlineCreate.title}
-                        onChange={(e) => setInlineCreate({ status, title: e.target.value })}
-                        placeholder="Issue title"
-                        className="h-8 text-sm"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleInlineCreate(status);
-                          }
-                          if (e.key === 'Escape') {
-                            setInlineCreate({ status: null, title: '' });
-                          }
-                        }}
-                      />
-                      <div className="mt-2 flex items-center gap-2">
-                        <Button size="sm" className="h-7 text-xs" onClick={() => handleInlineCreate(status)}>
-                          Create
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-7 text-xs"
-                          onClick={() => setInlineCreate({ status: null, title: '' })}
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setInlineCreate({ status, title: '' })}
-                      className="w-full h-8 rounded-md border border-dashed text-xs text-muted-foreground hover:text-foreground hover:border-border/80 flex items-center justify-center gap-1 transition-colors"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5 rotate-[-90deg]" />
-                      + Create
-                    </button>
-                  )}
+                  <button
+                    onClick={() => setCreateModalStatus(status)}
+                    className="w-full h-8 rounded-md border border-dashed text-xs text-muted-foreground hover:text-foreground hover:border-border/80 flex items-center justify-center gap-1 transition-colors"
+                  >
+                    <ChevronDown className="h-3.5 w-3.5 rotate-[-90deg]" />
+                    + Create
+                  </button>
                 </div>
               )}
             </div>
           );
         })}
       </div>
+      {projectId && createModalStatus && (
+        <IssueCreateModal
+          open
+          onOpenChange={(open) => {
+            if (!open) {
+              setCreateModalStatus(null);
+            }
+          }}
+          fixedProjectId={projectId}
+          fixedStatus={createModalStatus}
+          title={`Create ${STATUS_LABELS[createModalStatus]} Issue`}
+        />
+      )}
     </PageContainer>
   );
 }

@@ -1,17 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useIssues } from '@/queries/issue.queries';
-import { useSprints } from '@/queries/sprint.queries';
 import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from '@/components/ui/collapsible';
-import { ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import type { Issue } from '@/types/issue';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -19,7 +11,15 @@ export default function BacklogPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { data: issues = [], isLoading } = useIssues(projectId);
-  const { data: sprints = [] } = useSprints(projectId);
+
+  const backlogIssues = useMemo(
+    () => issues.filter((issue) => issue.status !== 'done'),
+    [issues]
+  );
+  const doneIssues = useMemo(
+    () => issues.filter((issue) => issue.status === 'done'),
+    [issues]
+  );
 
   if (isLoading) {
     return (
@@ -29,98 +29,64 @@ export default function BacklogPage() {
     );
   }
 
-  const groups = [
-    ...sprints.map((s) => ({
-      id: s.id,
-      label: `${s.name}${s.isActive ? ' (Active)' : ''}`,
-      issues: issues.filter((i) => i.sprintId === s.id),
-    })),
-    {
-      id: 'no-sprint',
-      label: 'Backlog',
-      issues: issues.filter((i) => !i.sprintId),
-    },
-  ];
-
   return (
     <PageContainer title="Backlog">
-      <div className="space-y-2">
-        {groups.map((group) => (
-          <BacklogGroup
-            key={group.id}
-            label={group.label}
-            issues={group.issues}
-            onIssueClick={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
-          />
-        ))}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <BacklogColumn
+          title="Backlog"
+          issues={backlogIssues}
+          onIssueClick={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
+        />
+        <BacklogColumn
+          title="Done"
+          issues={doneIssues}
+          onIssueClick={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
+        />
       </div>
     </PageContainer>
   );
 }
 
-function BacklogGroup({
-  label,
+function BacklogColumn({
+  title,
   issues,
   onIssueClick,
 }: {
-  label: string;
+  title: string;
   issues: Issue[];
   onIssueClick: (id: string) => void;
 }) {
-  const [open, setOpen] = useState(true);
-  const [scrollTop, setScrollTop] = useState(0);
-  const rowHeight = 34;
-  const viewportHeight = 280;
-  const overscan = 6;
-
-  const windowed = useMemo(() => {
-    const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-    const visibleCount = Math.ceil(viewportHeight / rowHeight) + overscan * 2;
-    const end = Math.min(issues.length, start + visibleCount);
-    return {
-      start,
-      end,
-      visible: issues.slice(start, end),
-      topSpacer: start * rowHeight,
-      bottomSpacer: Math.max(0, (issues.length - end) * rowHeight),
-    };
-  }, [issues, scrollTop]);
-
   return (
-    <Collapsible open={open} onOpenChange={setOpen}>
-      <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 px-3 rounded-md hover:bg-accent/50 text-sm font-medium">
-        <ChevronRight className={cn('h-4 w-4 transition-transform', open && 'rotate-90')} />
-        {label}
-        <span className="text-xs text-muted-foreground ml-auto">{issues.length} issues</span>
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <div
-          className="ml-6 space-y-px max-h-[280px] overflow-auto"
-          onScroll={(event) => setScrollTop(event.currentTarget.scrollTop)}
-        >
-          <div style={{ height: windowed.topSpacer }} />
-          {windowed.visible.map((issue) => (
-            <div
-              key={issue.id}
-              onClick={() => onIssueClick(issue.id)}
-              className="flex items-center gap-3 py-1.5 px-2 rounded-md hover:bg-accent/50 cursor-pointer text-sm"
-            >
-              <StatusIndicator status={issue.status} />
-              <span className="font-mono text-xs text-muted-foreground w-20">{issue.key}</span>
-              <span className="flex-1 truncate">{issue.title}</span>
-              {issue.assignee && (
-                <div className="h-5 w-5 rounded-md bg-muted flex items-center justify-center text-[10px] font-medium">
-                  {issue.assignee.name.charAt(0)}
-                </div>
-              )}
+    <section className="rounded-lg border bg-secondary/20">
+      <div className="flex items-center justify-between border-b px-4 py-3">
+        <h2 className="text-lg font-semibold">{title}</h2>
+        <span className="text-sm text-muted-foreground">{issues.length} issues</span>
+      </div>
+      <div className="space-y-2 p-3">
+        {issues.length === 0 && (
+          <div className="rounded-md border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            No issues in {title.toLowerCase()}.
+          </div>
+        )}
+        {issues.map((issue) => (
+          <button
+            key={issue.id}
+            onClick={() => onIssueClick(issue.id)}
+            className="flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left hover:bg-accent/40"
+          >
+            <StatusIndicator status={issue.status} />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium">{issue.title}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{issue.key}</div>
             </div>
-          ))}
-          <div style={{ height: windowed.bottomSpacer }} />
-          {issues.length === 0 && (
-            <p className="text-xs text-muted-foreground py-3 px-2">No issues in this group.</p>
-          )}
-        </div>
-      </CollapsibleContent>
-    </Collapsible>
+            {issue.assignee && (
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted text-[11px] font-medium">
+                {issue.assignee.name.charAt(0)}
+              </div>
+            )}
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }

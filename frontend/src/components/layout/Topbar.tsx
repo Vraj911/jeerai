@@ -1,13 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '@/store/ui.store';
 import { useCommandStore } from '@/store/command.store';
 import { useThemeStore } from '@/store/theme.store';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUsers } from '@/queries/user.queries';
 import { ROUTES } from '@/routes/routeConstants';
-import { Search, Plus, Command, Sun, Moon, LogOut, Settings, UserRound } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Search, Command, Sun, Moon, LogOut, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fuzzyMatch } from '@/lib/search';
 import { useIssues } from '@/queries/issue.queries';
@@ -30,13 +29,12 @@ type SearchEntity =
   | { id: string; label: string; value: string; route: string; group: 'Members'; meta: string };
 
 export function Topbar() {
-  const { setIssueCreateModalOpen, globalSearchOpen, setGlobalSearchOpen } = useUIStore();
+  const { globalSearchOpen, setGlobalSearchOpen } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
   const { theme, toggleTheme } = useThemeStore();
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentRole = useSessionStore((state) => state.currentRole);
   const clearSession = useSessionStore((state) => state.clearSession);
-  const location = useLocation();
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
@@ -136,8 +134,6 @@ export function Topbar() {
     setActiveIndex(0);
   }, [debouncedQuery, globalSearchOpen]);
 
-  const pathSegments = location.pathname.split('/').filter(Boolean);
-
   const handleSearchSelect = (item: SearchEntity) => {
     navigate(item.route);
     setGlobalSearchOpen(false);
@@ -151,21 +147,8 @@ export function Topbar() {
     navigate(ROUTES.AUTH.LOGIN, { replace: true });
   };
 
-  const canCreateIssues = currentRole !== 'VIEWER';
-
   return (
     <header className="flex h-12 items-center border-b px-4 gap-2 shrink-0 bg-background/90">
-      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-        {pathSegments.map((segment, i) => (
-          <span key={segment + i} className="flex items-center">
-            {i > 0 && <span className="mx-1 text-border">/</span>}
-            <span className={i === pathSegments.length - 1 ? 'text-foreground font-medium' : ''}>
-              {segment.charAt(0).toUpperCase() + segment.slice(1)}
-            </span>
-          </span>
-        ))}
-      </div>
-
       <div className="flex-1" />
 
       <div ref={searchRef} className="relative" role="combobox" aria-expanded={globalSearchOpen} aria-haspopup="listbox">
@@ -264,13 +247,6 @@ export function Topbar() {
         )}
       </div>
 
-      {canCreateIssues && (
-        <Button size="sm" onClick={() => setIssueCreateModalOpen(true)} className="h-7 gap-1 text-xs">
-          <Plus className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Create</span>
-        </Button>
-      )}
-
       <button
         onClick={() => setCommandOpen(true)}
         className="p-1.5 rounded-md hover:bg-accent text-muted-foreground"
@@ -316,12 +292,6 @@ export function Topbar() {
             <UserRound className="mr-2 h-4 w-4" />
             Members
           </DropdownMenuItem>
-          {(currentRole === 'OWNER' || currentRole === 'ADMIN') && (
-            <DropdownMenuItem onClick={() => navigate(ROUTES.APP.WORKSPACE_SETTINGS)}>
-              <Settings className="mr-2 h-4 w-4" />
-              Workspace settings
-            </DropdownMenuItem>
-          )}
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />
