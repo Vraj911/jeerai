@@ -20,6 +20,7 @@ import com.jeerai.backend.model.Workspace;
 import com.jeerai.backend.model.WorkspaceMember;
 import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.InvitationRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class InvitationService {
@@ -32,6 +33,7 @@ public class InvitationService {
     private final WorkspaceMemberService workspaceMemberService;
     private final UserService userService;
     private final InvitationDeliveryService invitationDeliveryService;
+    private final CurrentUserProvider currentUserProvider;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public InvitationService(
@@ -39,26 +41,19 @@ public class InvitationService {
             WorkspaceService workspaceService,
             WorkspaceMemberService workspaceMemberService,
             UserService userService,
-            InvitationDeliveryService invitationDeliveryService) {
+            InvitationDeliveryService invitationDeliveryService,
+            CurrentUserProvider currentUserProvider) {
         this.invitationRepository = invitationRepository;
         this.workspaceService = workspaceService;
         this.workspaceMemberService = workspaceMemberService;
         this.userService = userService;
         this.invitationDeliveryService = invitationDeliveryService;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public InvitationDto createInvitation(String workspaceId, CreateInvitationRequest request) {
         Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
-        WorkspaceMember actor = workspaceMemberService.requireMembership(workspaceId, request.getActorUserId());
-        if (actor.getRole() != WorkspaceRole.OWNER && actor.getRole() != WorkspaceRole.ADMIN) {
-            throw new AccessDeniedException("Only workspace owners or admins can invite users");
-        }
-        if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new BadRequestException("Invitation email is required");
-        }
-        if (request.getRole() == null) {
-            throw new BadRequestException("Invitation role is required");
-        }
+        workspaceMemberService.checkAdminAccess(workspaceId, currentUserProvider.getCurrentUserId());
         if (request.getRole() == WorkspaceRole.OWNER) {
             throw new BadRequestException("Owner role cannot be assigned through invitations");
         }
@@ -88,72 +83,48 @@ public class InvitationService {
 
         String inviteLink = buildInviteLink(invitation.getToken());
         invitationDeliveryService.sendWorkspaceInvitation(invitation, workspace, inviteLink);
-        return toDto(invitation);
+        return toDto(invitation, workspace.getName());
     }
 
-    public List<InvitationDto> getWorkspaceInvitations(String workspaceId, String userId) {
-        workspaceService.validateMembership(workspaceId, userId);
+    public List<InvitationDto> getWorkspaceInvitations(String workspaceId) {
+        Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
+        workspaceService.validateMembership(workspaceId);
         expireInvitations(workspaceId);
-        return invitationRepository.findByWorkspaceId(workspaceId).stream().map(this::toDto).toList();
+        return invitationRepository.findByWorkspaceId(workspaceId).stream()
+                .map(invitation -> toDto(invitation, workspace.getName()))
+                .toList();
     }
 
     public InvitationDto validateInvitation(String token) {
-        Invitation invitation = getInvitationByToken(token);
-        if (isExpired(invitation) && invitation.getStatus() == InvitationStatus.PENDING) {
-            invitation.setStatus(InvitationStatus.EXPIRED);
-            invitation = invitationRepository.save(invitation);
-        }
-        return toDto(invitation);
+        Invitation invitation = getPendingInvitationForCurrentUser(token);
+        Workspace workspace = workspaceService.getWorkspaceModel(invitation.getWorkspaceId());
+        return toDto(invitation, workspace.getName());
     }
 
     public InvitationDto acceptInvitation(String token, AcceptInvitationRequest request) {
-        Invitation invitation = getInvitationByToken(token);
-        if (invitation.getStatus() == InvitationStatus.REVOKED) {
-            throw new BadRequestException("Invitation has been revoked");
-        }
-        if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
-            throw new BadRequestException("Invitation has already been accepted");
-        }
-        if (isExpired(invitation)) {
-            invitation.setStatus(InvitationStatus.EXPIRED);
-            invitationRepository.save(invitation);
-            throw new BadRequestException("Invitation has expired");
-        }
-
-        User user;
-        if (request.getUserId() != null && !request.getUserId().isBlank()) {
-            user = userService.getById(request.getUserId());
-            if (!invitation.getEmail().equalsIgnoreCase(user.getEmail())) {
-                throw new BadRequestException("Invitation email does not match the provided user");
-            }
-        } else {
-            user = userService.findByEmail(invitation.getEmail())
-                    .orElseGet(() -> userService.createUser(request.getName(), invitation.getEmail(), request.getPasswordHash()));
-        }
+        Invitation invitation = getPendingInvitationForCurrentUser(token);
+        User user = userService.getById(currentUserProvider.getCurrentUserId());
 
         workspaceMemberService.addMember(invitation.getWorkspaceId(), user.getId(), invitation.getRole());
         invitation.setStatus(InvitationStatus.ACCEPTED);
-        return toDto(invitationRepository.save(invitation));
+        Workspace workspace = workspaceService.getWorkspaceModel(invitation.getWorkspaceId());
+        return toDto(invitationRepository.save(invitation), workspace.getName());
     }
 
-    public InvitationDto expireInvitation(String workspaceId, String invitationId, String actorUserId) {
-        WorkspaceMember actor = workspaceMemberService.requireMembership(workspaceId, actorUserId);
-        if (actor.getRole() != WorkspaceRole.OWNER && actor.getRole() != WorkspaceRole.ADMIN) {
-            throw new AccessDeniedException("Only workspace owners or admins can expire invitations");
-        }
+    public InvitationDto expireInvitation(String workspaceId, String invitationId) {
+        Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
+        workspaceMemberService.checkAdminAccess(workspaceId, currentUserProvider.getCurrentUserId());
         Invitation invitation = getWorkspaceInvitation(workspaceId, invitationId);
         invitation.setStatus(InvitationStatus.EXPIRED);
-        return toDto(invitationRepository.save(invitation));
+        return toDto(invitationRepository.save(invitation), workspace.getName());
     }
 
-    public InvitationDto revokeInvitation(String workspaceId, String invitationId, String actorUserId) {
-        WorkspaceMember actor = workspaceMemberService.requireMembership(workspaceId, actorUserId);
-        if (actor.getRole() != WorkspaceRole.OWNER && actor.getRole() != WorkspaceRole.ADMIN) {
-            throw new AccessDeniedException("Only workspace owners or admins can revoke invitations");
-        }
+    public InvitationDto revokeInvitation(String workspaceId, String invitationId) {
+        Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
+        workspaceMemberService.checkAdminAccess(workspaceId, currentUserProvider.getCurrentUserId());
         Invitation invitation = getWorkspaceInvitation(workspaceId, invitationId);
         invitation.setStatus(InvitationStatus.REVOKED);
-        return toDto(invitationRepository.save(invitation));
+        return toDto(invitationRepository.save(invitation), workspace.getName());
     }
 
     public void expireInvitations(String workspaceId) {
@@ -169,6 +140,22 @@ public class InvitationService {
     private Invitation getInvitationByToken(String token) {
         return invitationRepository.findByToken(token)
                 .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+    }
+
+    private Invitation getPendingInvitationForCurrentUser(String token) {
+        Invitation invitation = getInvitationByToken(token);
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new BadRequestException("Invitation is no longer pending");
+        }
+        if (isExpired(invitation)) {
+            invitation.setStatus(InvitationStatus.EXPIRED);
+            invitationRepository.save(invitation);
+            throw new BadRequestException("Invitation has expired");
+        }
+        if (!invitation.getEmail().equalsIgnoreCase(currentUserProvider.getCurrentUserEmail())) {
+            throw new AccessDeniedException("Invitation email does not match the authenticated user");
+        }
+        return invitation;
     }
 
     private Invitation getWorkspaceInvitation(String workspaceId, String invitationId) {
@@ -200,10 +187,11 @@ public class InvitationService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    private InvitationDto toDto(Invitation invitation) {
+    private InvitationDto toDto(Invitation invitation, String workspaceName) {
         return new InvitationDto(
                 invitation.getId(),
                 invitation.getWorkspaceId(),
+                workspaceName,
                 invitation.getEmail(),
                 invitation.getRole(),
                 invitation.getStatus(),

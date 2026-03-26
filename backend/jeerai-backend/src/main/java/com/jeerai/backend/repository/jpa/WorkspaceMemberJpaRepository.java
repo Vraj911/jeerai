@@ -11,7 +11,7 @@ import com.jeerai.backend.entity.WorkspaceMemberEntity;
 public interface WorkspaceMemberJpaRepository extends JpaRepository<WorkspaceMemberEntity, UUID> {
     List<WorkspaceMemberEntity> findByWorkspaceId(UUID workspaceId);
 
-    List<WorkspaceMemberEntity> findByUserId(UUID userId);
+    List<WorkspaceMemberEntity> findByUserPublicId(String userPublicId);
 
-    Optional<WorkspaceMemberEntity> findByWorkspaceIdAndUserId(UUID workspaceId, UUID userId);
+    Optional<WorkspaceMemberEntity> findByWorkspaceIdAndUserPublicId(UUID workspaceId, String userPublicId);
 }

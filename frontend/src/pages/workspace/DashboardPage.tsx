@@ -6,20 +6,50 @@ import { format } from 'date-fns';
 import { useIssues } from '@/queries/issue.queries';
 import { useProjects } from '@/queries/project.queries';
 import { useActivities } from '@/queries/activity.queries';
+import { useSessionStore } from '@/store/session.store';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { useWorkspaceDashboardAccess } from '@/queries/workspace.queries';
 
 export default function DashboardPage() {
   const navigate = useNavigate();
+  const currentUser = useSessionStore((state) => state.currentUser);
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
   const { data: projects = [] } = useProjects();
   const { data: issues = [] } = useIssues();
   const { data: activities = [] } = useActivities();
+  const { data: dashboardAccess } = useWorkspaceDashboardAccess(currentWorkspace?.id);
 
   const assignedIssues = issues.filter(
-    (i) => i.assignee?.id === 'user-1' && i.status !== 'done'
+    (i) => i.assignee?.id === currentUser?.id && i.status !== 'done'
   );
   const recentActivities = activities.slice(0, 5);
 
+  if (!currentWorkspace) {
+    return (
+      <PageContainer title="Dashboard">
+        <EmptyState
+          title="No workspace selected"
+          description="Create a workspace or accept an invitation to access the dashboard."
+          action={{ label: 'Go to onboarding', onClick: () => navigate(ROUTES.ONBOARDING) }}
+        />
+      </PageContainer>
+    );
+  }
+
+  if (dashboardAccess && !dashboardAccess.accessible) {
+    return (
+      <PageContainer title="Dashboard">
+        <EmptyState
+          title="Workspace access required"
+          description={dashboardAccess.reason}
+          action={{ label: 'Go to onboarding', onClick: () => navigate(ROUTES.ONBOARDING) }}
+        />
+      </PageContainer>
+    );
+  }
+
   return (
-    <PageContainer title="Dashboard">
+    <PageContainer title={`${currentWorkspace.name} Dashboard`}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
           <h2 className="text-base font-medium mb-3">Recent Projects</h2>

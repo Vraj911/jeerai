@@ -13,16 +13,22 @@ import com.jeerai.backend.model.User;
 import com.jeerai.backend.model.WorkspaceMember;
 import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.WorkspaceMemberRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class WorkspaceMemberService {
 
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserService userService;
+    private final CurrentUserProvider currentUserProvider;
 
-    public WorkspaceMemberService(WorkspaceMemberRepository workspaceMemberRepository, UserService userService) {
+    public WorkspaceMemberService(
+            WorkspaceMemberRepository workspaceMemberRepository,
+            UserService userService,
+            CurrentUserProvider currentUserProvider) {
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.userService = userService;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public WorkspaceMember addMember(String workspaceId, String userId, WorkspaceRole role) {
@@ -47,15 +53,16 @@ public class WorkspaceMemberService {
                 .orElseThrow(() -> new AccessDeniedException("User is not a member of this workspace"));
     }
 
+    public WorkspaceMember requireCurrentMembership(String workspaceId) {
+        return requireMembership(workspaceId, currentUserProvider.getCurrentUserId());
+    }
+
     public boolean isWorkspaceMember(String workspaceId, String userId) {
         return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId).isPresent();
     }
 
     public WorkspaceMemberDto updateRole(String workspaceId, String memberId, UpdateWorkspaceMemberRoleRequest request) {
-        WorkspaceMember actor = requireMembership(workspaceId, request.getActorUserId());
-        if (actor.getRole() != WorkspaceRole.OWNER) {
-            throw new AccessDeniedException("Only workspace owners can change member roles");
-        }
+        checkOwnerAccess(workspaceId, currentUserProvider.getCurrentUserId());
         WorkspaceMember member = workspaceMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace member not found"));
         if (!workspaceId.equals(member.getWorkspaceId())) {
@@ -68,8 +75,8 @@ public class WorkspaceMemberService {
         return toDto(workspaceMemberRepository.save(member));
     }
 
-    public void removeMember(String workspaceId, String memberId, String actorUserId) {
-        WorkspaceMember actor = requireMembership(workspaceId, actorUserId);
+    public void removeMember(String workspaceId, String memberId) {
+        WorkspaceMember actor = requireCurrentMembership(workspaceId);
         WorkspaceMember member = workspaceMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace member not found"));
         if (!workspaceId.equals(member.getWorkspaceId())) {
@@ -91,6 +98,26 @@ public class WorkspaceMemberService {
 
     public List<WorkspaceMember> getMembershipsForUser(String userId) {
         return workspaceMemberRepository.findByUserId(userId);
+    }
+
+    public List<WorkspaceMember> getMembershipsForCurrentUser() {
+        return getMembershipsForUser(currentUserProvider.getCurrentUserId());
+    }
+
+    public WorkspaceMember checkAdminAccess(String workspaceId, String userId) {
+        WorkspaceMember membership = requireMembership(workspaceId, userId);
+        if (membership.getRole() != WorkspaceRole.OWNER && membership.getRole() != WorkspaceRole.ADMIN) {
+            throw new AccessDeniedException("Only workspace owners or admins can manage this workspace");
+        }
+        return membership;
+    }
+
+    public WorkspaceMember checkOwnerAccess(String workspaceId, String userId) {
+        WorkspaceMember membership = requireMembership(workspaceId, userId);
+        if (membership.getRole() != WorkspaceRole.OWNER) {
+            throw new AccessDeniedException("Only workspace owners can perform this action");
+        }
+        return membership;
     }
 
     private WorkspaceMemberDto toDto(WorkspaceMember member) {

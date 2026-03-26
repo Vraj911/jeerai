@@ -3,6 +3,7 @@ package com.jeerai.backend.service;
 import java.util.List;
 import java.util.Optional;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
@@ -28,7 +29,10 @@ public class UserService {
     }
 
     public Optional<User> findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        if (email == null || email.isBlank()) {
+            return Optional.empty();
+        }
+        return userRepository.findByEmail(normalizeEmail(email));
     }
 
     public User createUser(String name, String email) {
@@ -36,13 +40,15 @@ public class UserService {
     }
 
     public User createUser(String name, String email, String passwordHash) {
-        if (email == null || email.isBlank()) {
+        String normalizedEmail = normalizeEmail(email);
+        if (normalizedEmail.isBlank()) {
             throw new BadRequestException("Email is required");
         }
-        if (name == null || name.isBlank()) {
+        String normalizedName = name == null ? "" : name.trim();
+        if (normalizedName.isBlank()) {
             throw new BadRequestException("Name is required");
         }
-        return userRepository.save(new User("user-" + UUID.randomUUID(), name, email, passwordHash, Instant.now()));
+        return userRepository.save(new User("user-" + UUID.randomUUID(), normalizedName, normalizedEmail, passwordHash, Instant.now()));
     }
 
     public User findOrCreateUser(String userId, String name, String email) {
@@ -54,5 +60,9 @@ public class UserService {
             return getById(userId);
         }
         return findByEmail(email).orElseGet(() -> createUser(name, email, passwordHash));
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 }

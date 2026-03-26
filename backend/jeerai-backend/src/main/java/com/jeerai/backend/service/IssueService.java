@@ -18,6 +18,7 @@ import com.jeerai.backend.model.User;
 import com.jeerai.backend.repository.IssueRepository;
 import com.jeerai.backend.repository.ProjectRepository;
 import com.jeerai.backend.repository.UserRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class IssueService {
@@ -29,38 +30,56 @@ public class IssueService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final WorkspaceAccessService workspaceAccessService;
+    private final CurrentUserProvider currentUserProvider;
 
     public IssueService(
             IssueRepository issueRepository,
             ProjectRepository projectRepository,
             UserRepository userRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            WorkspaceAccessService workspaceAccessService,
+            CurrentUserProvider currentUserProvider) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+        this.workspaceAccessService = workspaceAccessService;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public List<Issue> getAll(String projectId) {
-        return projectId == null ? issueRepository.findAll() : issueRepository.findByProjectId(projectId);
+        if (projectId != null) {
+            workspaceAccessService.requireProjectReadAccess(projectId);
+            return issueRepository.findByProjectId(projectId);
+        }
+
+        var accessibleWorkspaceIds = workspaceAccessService.getAccessibleWorkspaceIds();
+        return issueRepository.findAll().stream()
+                .filter(issue -> issue.getProjectId() != null)
+                .filter(issue -> projectRepository.findById(issue.getProjectId())
+                        .map(project -> project.getWorkspaceId() != null && accessibleWorkspaceIds.contains(project.getWorkspaceId()))
+                        .orElse(false))
+                .toList();
     }
 
     public Issue getById(String id) {
-        return issueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        Issue issue = issueRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
+        workspaceAccessService.requireProjectReadAccess(issue.getProjectId());
+        return issue;
     }
 
     public Issue create(IssueCreateRequest data) {
         String projectId = data.getProjectId() == null ? "proj-1" : data.getProjectId();
+        workspaceAccessService.requireProjectIssueWriteAccess(projectId);
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 
         long existing = issueRepository.findByProjectId(projectId).size();
         String issueId = "issue-" + System.currentTimeMillis();
 
-        User reporter = data.getReporter();
-        if (reporter == null) {
-            reporter = userRepository.findById("user-1").orElse(null);
-        }
+        User reporter = userRepository.findById(currentUserProvider.getCurrentUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
 
         Issue issue = new Issue(
                 issueId,
@@ -82,6 +101,7 @@ public class IssueService {
 
     public Issue update(String id, JsonNode data) {
         Issue issue = getById(id);
+        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
 
         if (data.has("title")) issue.setTitle(readNullableString(data, "title"));
         if (data.has("status")) issue.setStatus(readNullableString(data, "status"));
@@ -99,6 +119,7 @@ public class IssueService {
 
     public Issue updateStatus(String id, String status) {
         Issue issue = getById(id);
+        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
         issue.setStatus(status);
         issue.setUpdatedAt(Instant.now());
         return issueRepository.save(issue);
@@ -110,9 +131,10 @@ public class IssueService {
     }
 
     public IssueComment addComment(String issueId, AddCommentRequest request) {
-        getById(issueId);
-        User author = userRepository.findById(request.getAuthorId())
-                .orElseGet(() -> userRepository.findById("user-1").orElse(null));
+        Issue issue = getById(issueId);
+        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
+        User author = userRepository.findById(currentUserProvider.getCurrentUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
 
         IssueComment comment = new IssueComment(
                 "comment-" + System.currentTimeMillis(),
@@ -133,6 +155,7 @@ public class IssueService {
         double r = randomValue == null ? Math.random() : randomValue;
         int issueIndex = Math.floorMod((int) Math.floor(r * allIssues.size()), allIssues.size());
         Issue issue = allIssues.get(issueIndex);
+        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
 
         int statusIndex = STATUS_FLOW.indexOf(issue.getStatus());
         int priorityIndex = PRIORITY_FLOW.indexOf(issue.getPriority());

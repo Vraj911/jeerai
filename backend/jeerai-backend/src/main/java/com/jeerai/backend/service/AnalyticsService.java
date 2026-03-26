@@ -14,12 +14,15 @@ import com.jeerai.backend.repository.IssueRepository;
 public class AnalyticsService {
 
     private final IssueRepository issueRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
-    public AnalyticsService(IssueRepository issueRepository) {
+    public AnalyticsService(IssueRepository issueRepository, WorkspaceAccessService workspaceAccessService) {
         this.issueRepository = issueRepository;
+        this.workspaceAccessService = workspaceAccessService;
     }
 
     public AnalyticsDataDto getProjectAnalytics(String projectId) {
+        workspaceAccessService.requireProjectReadAccess(projectId);
         List<Issue> projectIssues = issueRepository.findByProjectId(projectId);
 
         List<AnalyticsDataDto.StatusCount> statusCounts = List.of("todo", "in-progress", "review", "done").stream()

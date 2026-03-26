@@ -57,6 +57,8 @@ const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
 
 const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
 const PRIORITY_OPTIONS = Object.entries(PRIORITY_LABELS).map(([value, label]) => ({ value, label }));
+const EMPTY_TRIGGER_VALUE = '__any__';
+const EMPTY_ACTION_VALUE = '__none__';
 
 function findUserName(users: User[], id: string): string {
   return users.find((u) => u.id === id)?.name ?? id;
@@ -82,6 +84,22 @@ function formatActionValue(type: ActionType, value: string, users: User[]): stri
   return value;
 }
 
+function normalizeTriggerValueForState(type: TriggerType, value: string) {
+  return type === 'issue_created' ? value || EMPTY_TRIGGER_VALUE : value;
+}
+
+function normalizeActionValueForState(type: ActionType, value: string) {
+  return type === 'send_notification' ? value || EMPTY_ACTION_VALUE : value;
+}
+
+function normalizeTriggerValueForPayload(value: string) {
+  return value === EMPTY_TRIGGER_VALUE ? '' : value;
+}
+
+function normalizeActionValueForPayload(value: string) {
+  return value === EMPTY_ACTION_VALUE ? '' : value;
+}
+
 interface RuleBuilderProps {
   projectId: string;
   onClose: () => void;
@@ -97,27 +115,31 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
   const [triggerType, setTriggerType] = useState<TriggerType>(
     (editRule?.trigger.type as TriggerType) ?? 'issue_created'
   );
-  const [triggerValue, setTriggerValue] = useState(editRule?.trigger.value ?? '');
+  const [triggerValue, setTriggerValue] = useState(
+    normalizeTriggerValueForState((editRule?.trigger.type as TriggerType) ?? 'issue_created', editRule?.trigger.value ?? '')
+  );
   const [conditions, setConditions] = useState<Array<{ type: ConditionType; value: string }>>(
     editRule?.conditions ?? []
   );
   const [actionType, setActionType] = useState<ActionType>(
     (editRule?.action.type as ActionType) ?? 'change_status'
   );
-  const [actionValue, setActionValue] = useState(editRule?.action.value ?? '');
+  const [actionValue, setActionValue] = useState(
+    normalizeActionValueForState((editRule?.action.type as ActionType) ?? 'change_status', editRule?.action.value ?? '')
+  );
 
   const getTriggerValueOptions = () => {
     if (triggerType === 'status_change') return STATUS_OPTIONS;
     if (triggerType === 'priority_change') return PRIORITY_OPTIONS;
     if (triggerType === 'assignee_change') return users.map((u) => ({ value: u.id, label: u.name }));
-    return [{ value: '', label: 'Any' }];
+    return [{ value: EMPTY_TRIGGER_VALUE, label: 'Any' }];
   };
 
   const getActionValueOptions = () => {
     if (actionType === 'change_status') return STATUS_OPTIONS;
     if (actionType === 'assign_user') return users.map((u) => ({ value: u.id, label: u.name }));
     if (actionType === 'add_label') return [{ value: 'critical', label: 'critical' }];
-    return [{ value: '', label: '--' }];
+    return [{ value: EMPTY_ACTION_VALUE, label: 'No extra value' }];
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -127,9 +149,9 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
     const payload = {
       name: name.trim(),
       projectId,
-      trigger: { type: triggerType, value: triggerValue },
+      trigger: { type: triggerType, value: normalizeTriggerValueForPayload(triggerValue) },
       conditions,
-      action: { type: actionType, value: actionValue },
+      action: { type: actionType, value: normalizeActionValueForPayload(actionValue) },
       enabled: true,
     };
 
@@ -156,7 +178,14 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
       <div className="space-y-3">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">WHEN</div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={triggerType} onValueChange={(v) => setTriggerType(v as TriggerType)}>
+          <Select
+            value={triggerType}
+            onValueChange={(v) => {
+              const nextType = v as TriggerType;
+              setTriggerType(nextType);
+              setTriggerValue(normalizeTriggerValueForState(nextType, ''));
+            }}
+          >
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               {TRIGGER_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -166,7 +195,7 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
             <Select value={triggerValue} onValueChange={setTriggerValue}>
               <SelectTrigger className="w-32"><SelectValue placeholder="Select..." /></SelectTrigger>
               <SelectContent>
-                {getTriggerValueOptions().map((o) => <SelectItem key={o.value || 'any'} value={o.value}>{o.label}</SelectItem>)}
+                {getTriggerValueOptions().map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
               </SelectContent>
             </Select>
           )}
@@ -205,13 +234,20 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
       <div className="space-y-3">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">THEN</div>
         <div className="flex gap-2 flex-wrap">
-          <Select value={actionType} onValueChange={(v) => setActionType(v as ActionType)}>
+          <Select
+            value={actionType}
+            onValueChange={(v) => {
+              const nextType = v as ActionType;
+              setActionType(nextType);
+              setActionValue(normalizeActionValueForState(nextType, ''));
+            }}
+          >
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{ACTION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
           <Select value={actionValue} onValueChange={setActionValue}>
             <SelectTrigger className="w-32"><SelectValue placeholder="Select..." /></SelectTrigger>
-            <SelectContent>{getActionValueOptions().map((o) => <SelectItem key={o.value || 'none'} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            <SelectContent>{getActionValueOptions().map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
       </div>
@@ -272,7 +308,6 @@ export default function AutomationPage() {
           <EmptyState
             title="No automation rules"
             description="Create automation rules to streamline your workflow."
-            action={{ label: 'Create Rule', onClick: () => setBuilderOpen(true) }}
           />
         ) : (
           <div className="space-y-3">

@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
 import { useProjects } from '@/queries/project.queries';
+import { useSessionStore } from '@/store/session.store';
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const navigate = useNavigate();
   const { data: projects = [] } = useProjects();
+  const currentRole = useSessionStore((state) => state.currentRole);
+  const canManageProjects = currentRole === 'OWNER' || currentRole === 'ADMIN';
 
   const filtered = projects.filter(
     (p) =>
@@ -24,12 +27,12 @@ export default function ProjectsPage() {
   return (
     <PageContainer
       title="Projects"
-      actions={
+      actions={canManageProjects ? (
         <Button size="sm" onClick={() => setCreateOpen(true)} className="gap-1">
           <Plus className="h-3.5 w-3.5" />
           Create Project
         </Button>
-      }
+      ) : undefined}
     >
       <div className="mb-4">
         <div className="relative max-w-sm">
@@ -56,7 +59,7 @@ export default function ProjectsPage() {
           <p className="text-sm text-muted-foreground">No projects found.</p>
         </div>
       )}
-      <ProjectCreateModal open={createOpen} onOpenChange={setCreateOpen} />
+      {canManageProjects && <ProjectCreateModal open={createOpen} onOpenChange={setCreateOpen} />}
     </PageContainer>
   );
 }

@@ -15,16 +15,22 @@ import com.jeerai.backend.repository.AutomationRuleRepository;
 public class AutomationRuleService {
 
     private final AutomationRuleRepository automationRuleRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
-    public AutomationRuleService(AutomationRuleRepository automationRuleRepository) {
+    public AutomationRuleService(
+            AutomationRuleRepository automationRuleRepository,
+            WorkspaceAccessService workspaceAccessService) {
         this.automationRuleRepository = automationRuleRepository;
+        this.workspaceAccessService = workspaceAccessService;
     }
 
     public List<AutomationRule> getByProject(String projectId) {
+        workspaceAccessService.requireProjectReadAccess(projectId);
         return automationRuleRepository.findByProjectId(projectId);
     }
 
     public AutomationRule create(AutomationRuleCreateRequest request) {
+        workspaceAccessService.requireProjectAdminAccess(request.getProjectId());
         AutomationRule rule = new AutomationRule(
                 "auto-" + System.currentTimeMillis(),
                 request.getName(),
@@ -40,6 +46,7 @@ public class AutomationRuleService {
     public AutomationRule update(String id, AutomationRuleUpdateRequest updated) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
+        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
 
         if (updated.getName() != null) rule.setName(updated.getName());
         if (updated.getProjectId() != null) rule.setProjectId(updated.getProjectId());
@@ -52,13 +59,16 @@ public class AutomationRuleService {
     }
 
     public void delete(String id) {
-        automationRuleRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
+        AutomationRule rule = automationRuleRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
+        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
         automationRuleRepository.deleteById(id);
     }
 
     public AutomationRule toggle(String id, boolean enabled) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
+        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
         rule.setEnabled(enabled);
         return automationRuleRepository.save(rule);
     }

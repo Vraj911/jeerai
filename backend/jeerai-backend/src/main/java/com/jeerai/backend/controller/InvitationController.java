@@ -7,14 +7,14 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
 import com.jeerai.backend.dto.InvitationDto;
 import com.jeerai.backend.service.InvitationService;
+
+import jakarta.validation.Valid;
 
 @RestController
 public class InvitationController {
@@ -26,13 +26,13 @@ public class InvitationController {
     }
 
     @PostMapping(path = "/api/workspaces/{workspaceId}/invitations", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public InvitationDto createInvitation(@PathVariable String workspaceId, @RequestBody CreateInvitationRequest request) {
+    public InvitationDto createInvitation(@PathVariable String workspaceId, @Valid @RequestBody CreateInvitationRequest request) {
         return invitationService.createInvitation(workspaceId, request);
     }
 
     @GetMapping(path = "/api/workspaces/{workspaceId}/invitations", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<InvitationDto> getWorkspaceInvitations(@PathVariable String workspaceId, @RequestParam String userId) {
-        return invitationService.getWorkspaceInvitations(workspaceId, userId);
+    public List<InvitationDto> getWorkspaceInvitations(@PathVariable String workspaceId) {
+        return invitationService.getWorkspaceInvitations(workspaceId);
     }
 
     @GetMapping(path = "/api/invitations/{token}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -41,23 +41,21 @@ public class InvitationController {
     }
 
     @PostMapping(path = "/api/invitations/{token}/accept", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public InvitationDto acceptInvitation(@PathVariable String token, @RequestBody AcceptInvitationRequest request) {
+    public InvitationDto acceptInvitation(@PathVariable String token, @RequestBody(required = false) AcceptInvitationRequest request) {
         return invitationService.acceptInvitation(token, request);
     }
 
     @PostMapping(path = "/api/workspaces/{workspaceId}/invitations/{invitationId}/expire", produces = MediaType.APPLICATION_JSON_VALUE)
     public InvitationDto expireInvitation(
             @PathVariable String workspaceId,
-            @PathVariable String invitationId,
-            @RequestParam String actorUserId) {
-        return invitationService.expireInvitation(workspaceId, invitationId, actorUserId);
+            @PathVariable String invitationId) {
+        return invitationService.expireInvitation(workspaceId, invitationId);
     }
 
     @PostMapping(path = "/api/workspaces/{workspaceId}/invitations/{invitationId}/revoke", produces = MediaType.APPLICATION_JSON_VALUE)
     public InvitationDto revokeInvitation(
             @PathVariable String workspaceId,
-            @PathVariable String invitationId,
-            @RequestParam String actorUserId) {
-        return invitationService.revokeInvitation(workspaceId, invitationId, actorUserId);
+            @PathVariable String invitationId) {
+        return invitationService.revokeInvitation(workspaceId, invitationId);
     }
 }

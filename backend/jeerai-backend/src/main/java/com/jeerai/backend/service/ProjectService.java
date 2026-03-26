@@ -18,13 +18,17 @@ import com.jeerai.backend.repository.ProjectRepository;
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
+    private final WorkspaceAccessService workspaceAccessService;
 
-    public ProjectService(ProjectRepository projectRepository) {
+    public ProjectService(ProjectRepository projectRepository, WorkspaceAccessService workspaceAccessService) {
         this.projectRepository = projectRepository;
+        this.workspaceAccessService = workspaceAccessService;
     }
 
     public List<ProjectDto> getAll() {
+        var accessibleWorkspaceIds = workspaceAccessService.getAccessibleWorkspaceIds();
         return projectRepository.findAll().stream()
+                .filter(project -> project.getWorkspaceId() != null && accessibleWorkspaceIds.contains(project.getWorkspaceId()))
                 .sorted(Comparator.comparing(Project::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toDto)
                 .collect(Collectors.toList());
@@ -33,10 +37,12 @@ public class ProjectService {
     public ProjectDto getById(String id) {
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
+        workspaceAccessService.requireProjectReadAccess(project.getId());
         return toDto(project);
     }
 
     public ProjectDto update(String id, ProjectUpdateRequest request) {
+        workspaceAccessService.requireProjectAdminAccess(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
 

@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/ui.store';
 import { useNotificationStore } from '@/store/notification.store';
 import { useThemeStore } from '@/store/theme.store';
+import { useSessionStore } from '@/store/session.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { APP_NAME, SIDEBAR_WIDTH, SIDEBAR_COLLAPSED_WIDTH } from '@/lib/constants';
 import {
@@ -30,6 +31,8 @@ export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, activityPulse, setActivityPulse } = useUIStore();
   const { notifications } = useNotificationStore();
   const { theme } = useThemeStore();
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
+  const currentRole = useSessionStore((state) => state.currentRole);
   const location = useLocation();
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const unreadCount = safeNotifications.filter((n) => !n.read).length;
@@ -43,9 +46,10 @@ export function Sidebar() {
     { label: 'Notifications', icon: Bell, path: ROUTES.APP.NOTIFICATIONS, badge: unreadCount },
   ];
 
-  const bottomItems: NavItem[] = [
-    { label: 'Settings', icon: Settings, path: ROUTES.APP.WORKSPACE_SETTINGS },
-  ];
+  const bottomItems: NavItem[] =
+    currentRole === 'OWNER' || currentRole === 'ADMIN'
+      ? [{ label: 'Settings', icon: Settings, path: ROUTES.APP.WORKSPACE_SETTINGS }]
+      : [];
 
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
 
@@ -116,9 +120,12 @@ export function Sidebar() {
           className="h-6 w-6 rounded-md shrink-0"
         />
         {!sidebarCollapsed && (
-          <span className="text-sm font-semibold text-foreground truncate">
-            {APP_NAME}
-          </span>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-foreground">{APP_NAME}</div>
+            {currentWorkspace && (
+              <div className="truncate text-[11px] text-muted-foreground">{currentWorkspace.name}</div>
+            )}
+          </div>
         )}
         <button
           onClick={toggleSidebar}

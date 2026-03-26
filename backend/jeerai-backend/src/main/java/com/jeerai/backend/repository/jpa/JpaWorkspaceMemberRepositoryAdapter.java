@@ -36,7 +36,7 @@ public class JpaWorkspaceMemberRepositoryAdapter implements com.jeerai.backend.r
     @Override
     @Transactional(readOnly = true)
     public List<WorkspaceMember> findByUserId(String userId) {
-        return workspaceMemberJpaRepository.findByUserId(UUID.fromString(userId)).stream()
+        return workspaceMemberJpaRepository.findByUserPublicId(userId).stream()
                 .map(mapper::toModel)
                 .toList();
     }
@@ -50,9 +50,9 @@ public class JpaWorkspaceMemberRepositoryAdapter implements com.jeerai.backend.r
     @Override
     @Transactional(readOnly = true)
     public Optional<WorkspaceMember> findByWorkspaceIdAndUserId(String workspaceId, String userId) {
-        return workspaceMemberJpaRepository.findByWorkspaceIdAndUserId(
+        return workspaceMemberJpaRepository.findByWorkspaceIdAndUserPublicId(
                 UUID.fromString(workspaceId),
-                UUID.fromString(userId)).map(mapper::toModel);
+                userId).map(mapper::toModel);
     }
 
     @Override

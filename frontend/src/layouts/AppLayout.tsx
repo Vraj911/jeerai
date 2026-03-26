@@ -9,16 +9,51 @@ import { IssueCreateModal } from '@/features/issues/components/IssueCreateModal'
 import { useUIStore } from '@/store/ui.store';
 import { useCommandStore } from '@/store/command.store';
 import { ROUTES } from '@/routes/routeConstants';
+import { useSessionStore } from '@/store/session.store';
+import { useWorkspaceMembers, useWorkspaces } from '@/queries/workspace.queries';
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const currentUser = useSessionStore((state) => state.currentUser);
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
+  const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
+  const setCurrentRole = useSessionStore((state) => state.setCurrentRole);
   const {
     issueCreateModalOpen,
     setIssueCreateModalOpen,
     setGlobalSearchOpen,
   } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
+  const { data: workspaces = [] } = useWorkspaces();
+  const { data: members = [] } = useWorkspaceMembers(currentWorkspace?.id);
   useRealtimeSimulation();
+
+  useEffect(() => {
+    if (!currentUser) {
+      return;
+    }
+
+    if (!currentWorkspace && workspaces.length > 0) {
+      setCurrentWorkspace(workspaces[0]);
+      return;
+    }
+
+    if (workspaces.length === 0) {
+      setCurrentWorkspace(null);
+      setCurrentRole(null);
+      navigate(ROUTES.ONBOARDING, { replace: true });
+    }
+  }, [currentUser, currentWorkspace, navigate, setCurrentRole, setCurrentWorkspace, workspaces]);
+
+  useEffect(() => {
+    if (!currentUser || !currentWorkspace) {
+      setCurrentRole(null);
+      return;
+    }
+
+    const membership = members.find((member) => member.user.id === currentUser.id);
+    setCurrentRole(membership?.role ?? null);
+  }, [currentUser, currentWorkspace, members, setCurrentRole]);
 
   useEffect(() => {
     let gPressedAt = 0;
@@ -85,6 +120,10 @@ export function AppLayout() {
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [navigate, setCommandOpen, setGlobalSearchOpen, setIssueCreateModalOpen]);
+
+  if (!currentWorkspace) {
+    return null;
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">

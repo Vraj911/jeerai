@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class InvitationDto {
     private String id;
     private String workspaceId;
+    private String workspaceName;
     private String email;
     private WorkspaceRole role;
     private InvitationStatus status;

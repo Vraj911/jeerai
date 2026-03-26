@@ -13,6 +13,7 @@ import { fuzzyMatch } from '@/lib/search';
 import { useIssues } from '@/queries/issue.queries';
 import { useProjects } from '@/queries/project.queries';
 import { APP_NAME } from '@/lib/constants';
+import { useSessionStore } from '@/store/session.store';
 
 type SearchEntity =
   | { id: string; label: string; value: string; route: string; group: 'Issues'; meta: string }
@@ -23,6 +24,7 @@ export function Topbar() {
   const { setIssueCreateModalOpen, globalSearchOpen, setGlobalSearchOpen } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
   const { theme, toggleTheme } = useThemeStore();
+  const currentRole = useSessionStore((state) => state.currentRole);
   const location = useLocation();
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
@@ -130,6 +132,8 @@ export function Topbar() {
     setGlobalSearchOpen(false);
     setSearchQuery('');
   };
+
+  const canCreateIssues = currentRole !== 'VIEWER';
 
   return (
     <header className="flex h-12 items-center border-b px-4 gap-2 shrink-0 bg-background/90">
@@ -242,10 +246,12 @@ export function Topbar() {
         )}
       </div>
 
-      <Button size="sm" onClick={() => setIssueCreateModalOpen(true)} className="h-7 gap-1 text-xs">
-        <Plus className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Create</span>
-      </Button>
+      {canCreateIssues && (
+        <Button size="sm" onClick={() => setIssueCreateModalOpen(true)} className="h-7 gap-1 text-xs">
+          <Plus className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Create</span>
+        </Button>
+      )}
 
       <button
         onClick={() => setCommandOpen(true)}

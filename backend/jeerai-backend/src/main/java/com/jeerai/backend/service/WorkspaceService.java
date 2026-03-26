@@ -16,6 +16,7 @@ import com.jeerai.backend.model.WorkspaceMember;
 import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.ProjectRepository;
 import com.jeerai.backend.repository.WorkspaceRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class WorkspaceService {
@@ -24,28 +25,23 @@ public class WorkspaceService {
     private final WorkspaceMemberService workspaceMemberService;
     private final UserService userService;
     private final ProjectRepository projectRepository;
+    private final CurrentUserProvider currentUserProvider;
 
     public WorkspaceService(
             WorkspaceRepository workspaceRepository,
             WorkspaceMemberService workspaceMemberService,
             UserService userService,
-            ProjectRepository projectRepository) {
+            ProjectRepository projectRepository,
+            CurrentUserProvider currentUserProvider) {
         this.workspaceRepository = workspaceRepository;
         this.workspaceMemberService = workspaceMemberService;
         this.userService = userService;
         this.projectRepository = projectRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public WorkspaceDto createWorkspace(CreateWorkspaceRequest request) {
-        if (request.getName() == null || request.getName().isBlank()) {
-            throw new BadRequestException("Workspace name is required");
-        }
-
-        User owner = userService.findOrCreateUser(
-                request.getOwnerUserId(),
-                request.getOwnerName(),
-                request.getOwnerEmail(),
-                request.getOwnerPasswordHash());
+        User owner = userService.getById(currentUserProvider.getCurrentUserId());
 
         Workspace workspace = workspaceRepository.save(new Workspace(
                 UUID.randomUUID().toString(),
@@ -54,42 +50,41 @@ public class WorkspaceService {
                 Instant.now()));
 
         workspaceMemberService.addMember(workspace.getId(), owner.getId(), WorkspaceRole.OWNER);
-        return toDto(workspace);
+        return toDto(workspace, WorkspaceRole.OWNER);
     }
 
-    public WorkspaceDto getWorkspace(String workspaceId, String userId) {
-        validateMembership(workspaceId, userId);
-        return toDto(getWorkspaceModel(workspaceId));
+    public WorkspaceDto getWorkspace(String workspaceId) {
+        WorkspaceMember membership = workspaceMemberService.requireCurrentMembership(workspaceId);
+        return toDto(getWorkspaceModel(workspaceId), membership.getRole());
     }
 
-    public List<WorkspaceDto> listUserWorkspaces(String userId) {
-        return workspaceMemberService.getMembershipsForUser(userId).stream()
-                .map(WorkspaceMember::getWorkspaceId)
-                .distinct()
-                .map(this::getWorkspaceModel)
-                .map(this::toDto)
+    public List<WorkspaceDto> listUserWorkspaces() {
+        return workspaceMemberService.getMembershipsForCurrentUser().stream()
+                .map(membership -> toDto(getWorkspaceModel(membership.getWorkspaceId()), membership.getRole()))
                 .toList();
     }
 
-    public void validateMembership(String workspaceId, String userId) {
-        workspaceMemberService.requireMembership(workspaceId, userId);
+    public void validateMembership(String workspaceId) {
+        workspaceMemberService.requireCurrentMembership(workspaceId);
     }
 
-    public OnboardingStatusDto getOnboardingStatus(String userId) {
-        List<WorkspaceDto> workspaces = listUserWorkspaces(userId);
-        return new OnboardingStatusDto(userId, workspaces.isEmpty(), workspaces.size(), workspaces);
+    public OnboardingStatusDto getOnboardingStatus() {
+        String currentUserId = currentUserProvider.getCurrentUserId();
+        List<WorkspaceDto> workspaces = listUserWorkspaces();
+        return new OnboardingStatusDto(currentUserId, workspaces.isEmpty(), workspaces.size(), workspaces);
     }
 
-    public DashboardAccessDto getDashboardAccess(String workspaceId, String userId) {
-        List<WorkspaceDto> workspaces = listUserWorkspaces(userId);
+    public DashboardAccessDto getDashboardAccess(String workspaceId) {
+        String currentUserId = currentUserProvider.getCurrentUserId();
+        List<WorkspaceDto> workspaces = listUserWorkspaces();
         boolean hasWorkspace = !workspaces.isEmpty();
-        boolean accessible = workspaceMemberService.isWorkspaceMember(workspaceId, userId);
+        boolean accessible = workspaceMemberService.isWorkspaceMember(workspaceId, currentUserId);
         String reason = accessible ? "Workspace access granted"
                 : hasWorkspace ? "User does not belong to the requested workspace"
                 : "User does not belong to any workspace";
         return new DashboardAccessDto(
                 workspaceId,
-                userId,
+                currentUserId,
                 hasWorkspace,
                 accessible,
                 !hasWorkspace,
@@ -110,10 +105,11 @@ public class WorkspaceService {
         });
     }
 
-    private WorkspaceDto toDto(Workspace workspace) {
+    private WorkspaceDto toDto(Workspace workspace, WorkspaceRole role) {
         return new WorkspaceDto(
                 workspace.getId(),
                 workspace.getName(),
+                role,
                 workspace.getOwnerId(),
                 workspace.getCreatedAt());
     }

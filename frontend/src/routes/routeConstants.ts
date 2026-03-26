@@ -1,9 +1,12 @@
 export const ROUTES = {
+  ROOT: '/',
   AUTH: {
     LOGIN: '/auth/login',
     SIGNUP: '/auth/signup',
     FORGOT_PASSWORD: '/auth/forgot-password',
   },
+  ONBOARDING: '/onboarding',
+  INVITE: (token: string) => `/invite/${token}`,
   APP: {
     DASHBOARD: '/app/dashboard',
     PROJECTS: '/app/projects',

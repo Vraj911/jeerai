@@ -8,6 +8,7 @@ import java.util.List;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,6 +28,8 @@ import com.jeerai.backend.repository.WorkspaceRepository;
 @Component
 public class MockDataInitializer implements ApplicationRunner {
 
+    private static final String DEFAULT_SEEDED_PASSWORD = "password";
+
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final SprintRepository sprintRepository;
@@ -38,6 +41,7 @@ public class MockDataInitializer implements ApplicationRunner {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final InvitationRepository invitationRepository;
     private final ObjectMapper objectMapper;
+    private final PasswordEncoder passwordEncoder;
 
     public MockDataInitializer(
             ProjectRepository projectRepository,
@@ -50,7 +54,8 @@ public class MockDataInitializer implements ApplicationRunner {
             WorkspaceRepository workspaceRepository,
             WorkspaceMemberRepository workspaceMemberRepository,
             InvitationRepository invitationRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            PasswordEncoder passwordEncoder) {
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.sprintRepository = sprintRepository;
@@ -62,17 +67,35 @@ public class MockDataInitializer implements ApplicationRunner {
         this.workspaceMemberRepository = workspaceMemberRepository;
         this.invitationRepository = invitationRepository;
         this.objectMapper = objectMapper;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         if (!userRepository.findAll().isEmpty()) {
+            userRepository.findAll().stream()
+                    .filter(user -> user.getPasswordHash() == null || user.getPasswordHash().isBlank())
+                    .forEach(user -> {
+                        user.setPasswordHash(passwordEncoder.encode(DEFAULT_SEEDED_PASSWORD));
+                        if (user.getCreatedAt() == null) {
+                            user.setCreatedAt(java.time.Instant.now());
+                        }
+                        userRepository.save(user);
+                    });
             return;
         }
 
         MockDataPayload payload = loadPayload();
 
-        safe(payload.getUsers()).forEach(userRepository::save);
+        safe(payload.getUsers()).forEach(user -> {
+            if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
+                user.setPasswordHash(passwordEncoder.encode(DEFAULT_SEEDED_PASSWORD));
+            }
+            if (user.getCreatedAt() == null) {
+                user.setCreatedAt(java.time.Instant.now());
+            }
+            userRepository.save(user);
+        });
 
         for (Project project : safe(payload.getProjects())) {
             projectRepository.save(project);
