@@ -1,0 +1,472 @@
+Jeerai Backend + UI Verification Note
+=====================================
+
+Purpose
+-------
+This file is a handoff note for external verification. It explains the auth flow, workspace-role flow, invitation flow, and which parts are already integrated between backend and frontend UI.
+
+
+1. High-level summary
+---------------------
+The current app has:
+
+- JWT-based signup/login
+- stateless backend auth for protected APIs
+- workspace-based multi-user access
+- workspace roles: OWNER, ADMIN, MEMBER, VIEWER
+- invitation-based team joining
+- onboarding flow for users who do not belong to any workspace yet
+- frontend session persistence using Zustand
+- frontend protected routes
+- role-aware UI behavior for inviting members, creating projects, and issue actions
+
+
+2. Backend auth architecture
+----------------------------
+Backend tech involved in auth:
+
+- Spring Security
+- custom JWT filter
+- BCrypt password hashing
+- AuthController + AuthService
+- CurrentUserProvider for extracting the logged-in user from the security context
+
+Relevant backend files:
+
+- src/main/java/com/jeerai/backend/config/SecurityConfig.java
+- src/main/java/com/jeerai/backend/controller/AuthController.java
+- src/main/java/com/jeerai/backend/service/AuthService.java
+- src/main/java/com/jeerai/backend/security/JwtAuthenticationFilter.java
+- src/main/java/com/jeerai/backend/security/JwtUtil.java
+- src/main/java/com/jeerai/backend/security/CurrentUserProvider.java
+
+Current security rules:
+
+- /auth/** is public
+- /health is public
+- /api/** requires authentication
+- any other route is denied
+
+Security mode:
+
+- stateless
+- no server session is used
+- each protected request is authenticated by Bearer token
+
+
+3. Signup flow
+--------------
+Backend flow:
+
+1. Frontend calls POST /auth/signup
+2. AuthService checks if email already exists
+3. Password is hashed using BCrypt
+4. User is created
+5. Backend returns:
+   - JWT token
+   - user object
+
+Frontend flow:
+
+1. Signup page collects workspace name, user name, email, password
+2. Frontend calls auth signup
+3. Token is stored in Zustand session store
+4. User is stored in Zustand session store
+5. Frontend immediately creates a workspace for that user
+6. Newly created workspace is stored as current workspace
+7. User is navigated to dashboard
+
+Relevant frontend files:
+
+- frontend/src/pages/auth/SignupPage.tsx
+- frontend/src/api/auth.api.ts
+- frontend/src/store/session.store.ts
+- frontend/src/queries/workspace.queries.ts
+
+
+4. Login flow
+-------------
+Backend flow:
+
+1. Frontend calls POST /auth/login
+2. AuthService finds the user by email
+3. BCrypt verifies the password
+4. Backend returns:
+   - JWT token
+   - user object
+
+Frontend flow:
+
+1. Login page calls login API
+2. Token is saved in Zustand
+3. User is saved in Zustand
+4. Frontend loads workspaces for that user
+5. If user has no workspace:
+   - current workspace is cleared
+   - current role is cleared
+   - user is sent to onboarding
+6. If user has one or more workspaces:
+   - first workspace is selected
+   - user is sent to dashboard
+
+Relevant frontend files:
+
+- frontend/src/pages/auth/LoginPage.tsx
+- frontend/src/api/auth.api.ts
+- frontend/src/api/workspace.api.ts
+- frontend/src/store/session.store.ts
+
+
+5. How authenticated API requests work
+--------------------------------------
+Frontend:
+
+- token is persisted in Zustand
+- axios interceptor reads token from store
+- interceptor adds Authorization: Bearer <token>
+
+Relevant frontend file:
+
+- frontend/src/api/client.ts
+
+Backend:
+
+1. JwtAuthenticationFilter runs before request reaches controller
+2. It skips /auth/** and /health
+3. For protected routes it expects Authorization header with Bearer token
+4. JwtUtil parses token and extracts:
+   - userId
+   - email
+5. Spring Security context is populated with AuthenticatedUser
+6. Controllers/services use CurrentUserProvider to access current user identity
+
+Important detail:
+
+- many frontend API methods still pass userId or actorUserId as params/payload
+- the backend mostly ignores those for authorization
+- authorization is primarily driven by JWT + CurrentUserProvider
+
+
+6. Workspace model
+------------------
+The system is workspace-centered.
+
+A user can belong to multiple workspaces.
+
+Each workspace membership has a role:
+
+- OWNER
+- ADMIN
+- MEMBER
+- VIEWER
+
+Relevant backend files:
+
+- src/main/java/com/jeerai/backend/model/WorkspaceRole.java
+- src/main/java/com/jeerai/backend/service/WorkspaceService.java
+- src/main/java/com/jeerai/backend/service/WorkspaceMemberService.java
+- src/main/java/com/jeerai/backend/controller/WorkspaceController.java
+- src/main/java/com/jeerai/backend/controller/WorkspaceMemberController.java
+
+
+7. Role model currently implemented
+-----------------------------------
+OWNER:
+
+- created automatically when workspace is created
+- can manage workspace membership
+- can update roles
+- can invite users
+- can revoke/expire invitations
+- cannot be reassigned from the role-update endpoint
+- cannot be removed from workspace by the remove-member endpoint
+
+ADMIN:
+
+- can invite users
+- can revoke/expire invitations
+- can manage workspace to some extent
+- can remove MEMBER or VIEWER
+- cannot remove OWNER
+- cannot remove another ADMIN according to current backend rule
+- cannot use the owner-only role reassignment endpoint
+
+MEMBER:
+
+- standard workspace member
+- can access workspace if they belong to it
+- cannot manage membership/invitations
+
+VIEWER:
+
+- read-oriented workspace role
+- can access workspace if they belong to it
+- UI already restricts some actions for VIEWER
+
+
+8. Concrete role-based backend rules already present
+----------------------------------------------------
+Workspace creation:
+
+- authenticated user creates workspace
+- creator becomes OWNER automatically
+
+Membership access:
+
+- workspace endpoints validate that current authenticated user belongs to the workspace
+
+Invitations:
+
+- only OWNER or ADMIN can create invitations
+- OWNER role cannot be assigned via invitation
+- duplicate active invitation for same workspace/email is blocked
+- inviting an already-existing member is blocked
+
+Role updates:
+
+- current implementation requires OWNER
+- OWNER cannot be changed through updateRole endpoint
+
+Member removal:
+
+- OWNER cannot be removed
+- OWNER or ADMIN can remove users
+- ADMIN can remove only MEMBER or VIEWER
+
+Invitation acceptance:
+
+- invitation token must exist
+- invitation must be PENDING
+- invitation must not be expired
+- invitation email must match the authenticated user email
+- accepting invite creates workspace membership using invitation role
+
+
+9. Invitation workflow
+----------------------
+Backend invitation endpoints:
+
+- POST /api/workspaces/{workspaceId}/invitations
+- GET /api/workspaces/{workspaceId}/invitations
+- GET /api/invitations/{token}
+- POST /api/invitations/{token}/accept
+- POST /api/workspaces/{workspaceId}/invitations/{invitationId}/expire
+- POST /api/workspaces/{workspaceId}/invitations/{invitationId}/revoke
+
+Invitation statuses:
+
+- PENDING
+- ACCEPTED
+- EXPIRED
+- REVOKED
+
+Invitation behavior:
+
+- invite token is securely generated
+- default expiry is 7 days
+- expiry can be overridden between 1 and 30 days
+- invite link is constructed as https://jeerai.com/invite/{token}
+- invitations are auto-marked expired when listing workspace invitations if expiry time passed
+
+Current UI integration:
+
+- members page can create invitations
+- invitation page can validate and accept invitation by token
+- onboarding page allows pasting invite token and moving into invitation review flow
+
+Relevant backend files:
+
+- src/main/java/com/jeerai/backend/service/InvitationService.java
+- src/main/java/com/jeerai/backend/controller/InvitationController.java
+
+Relevant frontend files:
+
+- frontend/src/pages/workspace/MembersPage.tsx
+- frontend/src/pages/workspace/InvitationPage.tsx
+- frontend/src/pages/workspace/OnboardingPage.tsx
+- frontend/src/api/invitation.api.ts
+- frontend/src/queries/invitation.queries.ts
+
+
+10. Onboarding workflow
+-----------------------
+The system supports a "no workspace yet" state.
+
+Backend:
+
+- GET /api/workspaces/onboarding returns whether onboarding is required
+
+Frontend:
+
+- after login, if user has zero workspaces, user is sent to onboarding
+- onboarding page offers:
+  - create a new workspace
+  - paste invitation token to join an existing workspace
+
+Relevant files:
+
+- src/main/java/com/jeerai/backend/controller/WorkspaceController.java
+- src/main/java/com/jeerai/backend/service/WorkspaceService.java
+- frontend/src/pages/workspace/OnboardingPage.tsx
+- frontend/src/queries/workspace.queries.ts
+
+
+11. How current role reaches the UI
+-----------------------------------
+Frontend session store contains:
+
+- currentUser
+- token
+- currentWorkspace
+- currentRole
+
+Important detail:
+
+- frontend does not rely on workspace list response alone for role
+- AppLayout loads workspace members for the current workspace
+- it finds the current user's membership
+- it sets currentRole from that membership record
+
+This means role-driven UI depends on members data being loaded.
+
+Relevant frontend files:
+
+- frontend/src/store/session.store.ts
+- frontend/src/layouts/AppLayout.tsx
+
+
+12. Current role-based UI behavior already integrated
+-----------------------------------------------------
+The frontend already uses currentRole in several places.
+
+Examples:
+
+- Members page:
+  - OWNER or ADMIN can invite teammates
+  - invite form role choices are ADMIN, MEMBER, VIEWER
+  - pending invitations list is shown
+
+- Projects page:
+  - create-project action is shown only to OWNER or ADMIN
+
+- Topbar:
+  - VIEWER is restricted from create-issue capability
+
+- Sidebar:
+  - role-aware navigation behavior exists
+
+Relevant frontend files:
+
+- frontend/src/pages/workspace/MembersPage.tsx
+- frontend/src/pages/workspace/ProjectsPage.tsx
+- frontend/src/components/layout/Topbar.tsx
+- frontend/src/components/layout/Sidebar.tsx
+
+
+13. Protected-route integration in UI
+-------------------------------------
+Frontend uses a protected route wrapper.
+
+Current behavior:
+
+- if currentUser is missing, route redirects to login
+- protected app shell requires a logged-in user
+
+Relevant frontend file:
+
+- frontend/src/routes/ProtectedRoute.tsx
+
+
+14. Backend-to-frontend integration status
+------------------------------------------
+Already integrated and working conceptually:
+
+- signup returns token + user
+- login returns token + user
+- frontend stores token and user
+- protected API calls use Bearer token
+- workspace creation after signup is wired
+- onboarding for zero-workspace users is wired
+- invitation review and acceptance flow is wired
+- members listing is wired
+- current role is derived in UI from workspace member list
+- UI uses currentRole to show/hide some actions
+
+
+15. Important implementation notes for verification
+---------------------------------------------------
+These are useful for GPT/code-review style verification.
+
+1. Backend authorization is JWT-driven, not query-param-driven.
+   The frontend still sends some userId/actorUserId params, but backend mostly uses the authenticated principal instead.
+
+2. Auth routes are outside /api.
+   Public auth endpoints are:
+   - /auth/signup
+   - /auth/login
+
+3. CORS had to include both:
+   - /api/**
+   - /auth/**
+
+4. WorkspaceDto on backend includes role, but the frontend Workspace type currently does not include role.
+   Instead, UI role is resolved later through workspace member lookup in AppLayout.
+
+5. Login page currently sets currentRole to null immediately after workspace selection.
+   The real role is then populated later by AppLayout after members query resolves.
+
+6. Invitation acceptance currently requires an authenticated user whose email matches the invitation email.
+   This is stricter than many public-invite flows and should be considered intentional unless product requirements say otherwise.
+
+
+16. Useful files to inspect for verification
+--------------------------------------------
+Backend:
+
+- src/main/java/com/jeerai/backend/config/SecurityConfig.java
+- src/main/java/com/jeerai/backend/controller/AuthController.java
+- src/main/java/com/jeerai/backend/service/AuthService.java
+- src/main/java/com/jeerai/backend/security/JwtAuthenticationFilter.java
+- src/main/java/com/jeerai/backend/security/CurrentUserProvider.java
+- src/main/java/com/jeerai/backend/controller/WorkspaceController.java
+- src/main/java/com/jeerai/backend/controller/WorkspaceMemberController.java
+- src/main/java/com/jeerai/backend/controller/InvitationController.java
+- src/main/java/com/jeerai/backend/service/WorkspaceService.java
+- src/main/java/com/jeerai/backend/service/WorkspaceMemberService.java
+- src/main/java/com/jeerai/backend/service/InvitationService.java
+
+Frontend:
+
+- frontend/src/api/client.ts
+- frontend/src/api/auth.api.ts
+- frontend/src/api/workspace.api.ts
+- frontend/src/api/invitation.api.ts
+- frontend/src/store/session.store.ts
+- frontend/src/routes/ProtectedRoute.tsx
+- frontend/src/layouts/AppLayout.tsx
+- frontend/src/pages/auth/LoginPage.tsx
+- frontend/src/pages/auth/SignupPage.tsx
+- frontend/src/pages/workspace/OnboardingPage.tsx
+- frontend/src/pages/workspace/InvitationPage.tsx
+- frontend/src/pages/workspace/MembersPage.tsx
+- frontend/src/pages/workspace/ProjectsPage.tsx
+
+
+17. Short conclusion
+--------------------
+This codebase already contains a real auth + workspace-role foundation, not just UI placeholders.
+
+What is already implemented:
+
+- JWT signup/login
+- protected backend APIs
+- current-user extraction from token
+- workspace membership model
+- role-based membership management rules
+- invitation-based joining flow
+- onboarding flow
+- frontend session persistence
+- frontend protected routing
+- UI actions that already react to workspace role
+
+This should be verified as an existing integrated auth and role-based access flow, with some implementation details and cleanup opportunities still remaining.

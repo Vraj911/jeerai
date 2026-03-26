@@ -15,6 +15,7 @@ import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.User;
+import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.IssueRepository;
 import com.jeerai.backend.repository.ProjectRepository;
 import com.jeerai.backend.repository.UserRepository;
@@ -31,6 +32,7 @@ public class IssueService {
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final WorkspaceAccessService workspaceAccessService;
+    private final WorkspaceMemberService workspaceMemberService;
     private final CurrentUserProvider currentUserProvider;
 
     public IssueService(
@@ -39,12 +41,14 @@ public class IssueService {
             UserRepository userRepository,
             ObjectMapper objectMapper,
             WorkspaceAccessService workspaceAccessService,
+            WorkspaceMemberService workspaceMemberService,
             CurrentUserProvider currentUserProvider) {
         this.issueRepository = issueRepository;
         this.projectRepository = projectRepository;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
         this.workspaceAccessService = workspaceAccessService;
+        this.workspaceMemberService = workspaceMemberService;
         this.currentUserProvider = currentUserProvider;
     }
 
@@ -147,14 +151,29 @@ public class IssueService {
     }
 
     public Issue simulateRandomUpdate(Double randomValue) {
-        List<Issue> allIssues = issueRepository.findAll();
-        if (allIssues.isEmpty()) {
+        List<Issue> writableIssues = issueRepository.findAll().stream()
+                .filter(issue -> issue.getProjectId() != null && !issue.getProjectId().isBlank())
+                .filter(issue -> projectRepository.findById(issue.getProjectId())
+                        .map(project -> {
+                            String workspaceId = project.getWorkspaceId();
+                            if (workspaceId == null || workspaceId.isBlank()) {
+                                return false;
+                            }
+
+                            return workspaceMemberService.getMembershipsForCurrentUser().stream()
+                                    .anyMatch(membership -> workspaceId.equals(membership.getWorkspaceId())
+                                            && membership.getRole() != WorkspaceRole.VIEWER);
+                        })
+                        .orElse(false))
+                .toList();
+
+        if (writableIssues.isEmpty()) {
             throw new ResourceNotFoundException("No issues found");
         }
 
         double r = randomValue == null ? Math.random() : randomValue;
-        int issueIndex = Math.floorMod((int) Math.floor(r * allIssues.size()), allIssues.size());
-        Issue issue = allIssues.get(issueIndex);
+        int issueIndex = Math.floorMod((int) Math.floor(r * writableIssues.size()), writableIssues.size());
+        Issue issue = writableIssues.get(issueIndex);
         workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
 
         int statusIndex = STATUS_FLOW.indexOf(issue.getStatus());
