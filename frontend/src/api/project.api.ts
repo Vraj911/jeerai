@@ -1,9 +1,21 @@
 import { apiClient } from './client';
 import type { Project } from '@/types/project';
 
+interface CreateProjectPayload {
+  name: string;
+  key: string;
+  description: string;
+  workspaceId: string;
+}
+
 export const projectApi = {
   getAll: async (): Promise<Project[]> => {
     const { data } = await apiClient.get<Project[]>('/projects');
+    return data;
+  },
+
+  create: async (payload: CreateProjectPayload): Promise<Project> => {
+    const { data } = await apiClient.post<Project>('/projects', payload);
     return data;
   },
 

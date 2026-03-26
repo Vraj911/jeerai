@@ -7,20 +7,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useParams } from 'react-router-dom';
 import { useProject, useUpdateProject } from '@/queries/project.queries';
+import { useWorkspaceMembers } from '@/queries/workspace.queries';
 import { useToast } from '@/hooks/use-toast';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { useSessionStore } from '@/store/session.store';
 
-const ROLES = ['Admin', 'Developer', 'Viewer'] as const;
+const ROLES = ['Admin', 'Member', 'Viewer'] as const;
 const PERMISSIONS = ['Create issues', 'Edit issues', 'Delete issues', 'Manage project', 'View analytics'] as const;
 
 const MOCK_INTEGRATIONS = [
@@ -34,9 +30,10 @@ export default function ProjectSettings() {
   const { data: project, isLoading } = useProject(projectId ?? '');
   const updateProject = useUpdateProject();
   const { toast } = useToast();
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
+  const { data: workspaceMembers = [] } = useWorkspaceMembers(currentWorkspace?.id);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [memberRoles, setMemberRoles] = useState<Record<string, string>>({});
   const [permissionMatrix, setPermissionMatrix] = useState<Record<string, Record<string, boolean>>>({});
   const [integrations, setIntegrations] = useState<Record<string, boolean>>({
     github: false,
@@ -72,15 +69,6 @@ export default function ProjectSettings() {
         },
       }
     );
-  };
-
-  const handleRoleChange = (userId: string, role: string) => {
-    setMemberRoles((prev) => ({ ...prev, [userId]: role }));
-    toast({ title: 'Role updated', description: 'Member role has been changed.' });
-  };
-
-  const handleRemoveMember = (userId: string) => {
-    toast({ title: 'Member removed', description: 'Member has been removed from the project.' });
   };
 
   const handlePermissionChange = (role: string, perm: string, checked: boolean) => {
@@ -135,12 +123,15 @@ export default function ProjectSettings() {
           </Button>
         </TabsContent>
         <TabsContent value="members" className="mt-4">
+          <div className="mb-4 rounded-md border p-3 text-sm text-muted-foreground">
+            Project members are currently inherited from the workspace. Roles shown here are workspace roles, not a separate project-specific permission model.
+          </div>
           <div className="rounded-md border">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b">
                   <th className="text-left p-3 font-medium">Member</th>
-                  <th className="text-left p-3 font-medium">Role</th>
+                  <th className="text-left p-3 font-medium">Workspace Role</th>
                   <th className="text-right p-3 font-medium">Actions</th>
                 </tr>
               </thead>
@@ -156,31 +147,19 @@ export default function ProjectSettings() {
                       </div>
                     </td>
                     <td className="p-3">
-                      <Select
-                        value={memberRoles[member.id] ?? 'Developer'}
-                        onValueChange={(v) => handleRoleChange(member.id, v)}
-                      >
-                        <SelectTrigger className="h-8 w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((r) => (
-                            <SelectItem key={r} value={r}>
-                              {r}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      {(() => {
+                        const workspaceMember = workspaceMembers.find((entry) => entry.user.id === member.id);
+                        const isLead = project.lead?.id === member.id;
+                        return (
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{workspaceMember?.role ?? 'MEMBER'}</Badge>
+                            {isLead && <Badge variant="outline">Project Lead</Badge>}
+                          </div>
+                        );
+                      })()}
                     </td>
-                    <td className="p-3 text-right">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 text-destructive hover:text-destructive"
-                        onClick={() => handleRemoveMember(member.id)}
-                      >
-                        Remove
-                      </Button>
+                    <td className="p-3 text-right text-muted-foreground">
+                      Manage in workspace settings
                     </td>
                   </tr>
                 ))}

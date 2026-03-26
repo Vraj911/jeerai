@@ -168,7 +168,7 @@ public class IssueService {
                 .toList();
 
         if (writableIssues.isEmpty()) {
-            throw new ResourceNotFoundException("No issues found");
+            return null;
         }
 
         double r = randomValue == null ? Math.random() : randomValue;

@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useCreateProject } from '@/queries/project.queries';
+import { useSessionStore } from '@/store/session.store';
 
 interface ProjectCreateModalProps {
   open: boolean;
@@ -22,6 +24,8 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
   const [key, setKey] = useState('');
   const [description, setDescription] = useState('');
   const { toast } = useToast();
+  const createProject = useCreateProject();
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
 
   const generateKey = (val: string) =>
     val.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4);
@@ -40,10 +44,26 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
     setDescription('');
   };
 
-  const handleSubmit = () => {
-    toast({ title: 'Project created', description: name });
-    onOpenChange(false);
-    reset();
+  const handleSubmit = async () => {
+    if (!currentWorkspace?.id) {
+      toast({ title: 'Workspace missing', description: 'Select a workspace before creating a project.', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      await createProject.mutateAsync({
+        name: name.trim(),
+        key: key.trim().toUpperCase(),
+        description: description.trim(),
+        workspaceId: currentWorkspace.id,
+      });
+      toast({ title: 'Project created', description: name.trim() });
+      onOpenChange(false);
+      reset();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create project.';
+      toast({ title: 'Project creation failed', description: message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -82,7 +102,7 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
             <p className="text-sm text-muted-foreground">Team assignment can be configured after project creation.</p>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setStep(1)}>Back</Button>
-              <Button size="sm" onClick={handleSubmit}>Create Project</Button>
+              <Button size="sm" onClick={() => void handleSubmit()} disabled={createProject.isPending}>Create Project</Button>
             </div>
           </div>
         )}

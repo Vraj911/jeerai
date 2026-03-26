@@ -14,6 +14,7 @@ import { useWorkspaceMembers, useWorkspaces } from '@/queries/workspace.queries'
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const hasHydrated = useSessionStore((state) => state.hasHydrated);
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
   const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
@@ -24,12 +25,12 @@ export function AppLayout() {
     setGlobalSearchOpen,
   } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
-  const { data: workspaces = [] } = useWorkspaces();
+  const { data: workspaces = [], isLoading: workspacesLoading, isFetched: workspacesFetched } = useWorkspaces();
   const { data: members = [] } = useWorkspaceMembers(currentWorkspace?.id);
   useRealtimeSimulation();
 
   useEffect(() => {
-    if (!currentUser) {
+    if (!hasHydrated || !currentUser || workspacesLoading) {
       return;
     }
 
@@ -38,12 +39,12 @@ export function AppLayout() {
       return;
     }
 
-    if (workspaces.length === 0) {
+    if (!currentWorkspace && workspacesFetched && workspaces.length === 0) {
       setCurrentWorkspace(null);
       setCurrentRole(null);
       navigate(ROUTES.ONBOARDING, { replace: true });
     }
-  }, [currentUser, currentWorkspace, navigate, setCurrentRole, setCurrentWorkspace, workspaces]);
+  }, [currentUser, currentWorkspace, hasHydrated, navigate, setCurrentRole, setCurrentWorkspace, workspaces, workspacesFetched, workspacesLoading]);
 
   useEffect(() => {
     if (!currentUser || !currentWorkspace) {
@@ -121,7 +122,7 @@ export function AppLayout() {
     return () => window.removeEventListener('keydown', handler);
   }, [navigate, setCommandOpen, setGlobalSearchOpen, setIssueCreateModalOpen]);
 
-  if (!currentWorkspace) {
+  if (!hasHydrated || workspacesLoading || !currentWorkspace) {
     return null;
   }
 

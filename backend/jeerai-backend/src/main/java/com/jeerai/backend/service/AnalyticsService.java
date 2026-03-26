@@ -1,23 +1,32 @@
 package com.jeerai.backend.service;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.dto.AnalyticsDataDto;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.SprintRepository;
 
 @Service
 public class AnalyticsService {
 
     private final IssueRepository issueRepository;
+    private final SprintRepository sprintRepository;
     private final WorkspaceAccessService workspaceAccessService;
 
-    public AnalyticsService(IssueRepository issueRepository, WorkspaceAccessService workspaceAccessService) {
+    public AnalyticsService(
+            IssueRepository issueRepository,
+            SprintRepository sprintRepository,
+            WorkspaceAccessService workspaceAccessService) {
         this.issueRepository = issueRepository;
+        this.sprintRepository = sprintRepository;
         this.workspaceAccessService = workspaceAccessService;
     }
 
@@ -31,7 +40,7 @@ public class AnalyticsService {
                         (int) projectIssues.stream().filter(i -> status.equals(i.getStatus())).count()))
                 .toList();
 
-        Map<String, AnalyticsDataDto.WorkloadBucket> workload = new java.util.LinkedHashMap<>();
+        Map<String, AnalyticsDataDto.WorkloadBucket> workload = new LinkedHashMap<>();
         for (Issue issue : projectIssues) {
             String assignee = issue.getAssignee() == null ? "Unassigned" : issue.getAssignee().getName();
             workload.putIfAbsent(assignee, new AnalyticsDataDto.WorkloadBucket(assignee, 0, 0, 0, 0));
@@ -42,17 +51,42 @@ public class AnalyticsService {
             else bucket.setDone(bucket.getDone() + 1);
         }
 
+        List<AnalyticsDataDto.CompletionBucket> completionData = buildCompletionData(projectIssues);
+        List<AnalyticsDataDto.VelocityBucket> velocityData = buildVelocityData(projectId, projectIssues);
+
         return new AnalyticsDataDto(
                 statusCounts,
-                new ArrayList<>(List.of(
-                        new AnalyticsDataDto.CompletionBucket("Week 1", 3),
-                        new AnalyticsDataDto.CompletionBucket("Week 2", 5),
-                        new AnalyticsDataDto.CompletionBucket("Week 3", 4),
-                        new AnalyticsDataDto.CompletionBucket("Week 4", 6))),
-                new ArrayList<>(List.of(
-                        new AnalyticsDataDto.VelocityBucket("Sprint 10", 8),
-                        new AnalyticsDataDto.VelocityBucket("Sprint 11", 11),
-                        new AnalyticsDataDto.VelocityBucket("Sprint 12", 5))),
+                completionData,
+                velocityData,
                 new ArrayList<>(workload.values()));
+    }
+
+    private List<AnalyticsDataDto.CompletionBucket> buildCompletionData(List<Issue> projectIssues) {
+        List<Issue> doneIssues = projectIssues.stream()
+                .filter(issue -> "done".equals(issue.getStatus()) && issue.getUpdatedAt() != null)
+                .sorted(Comparator.comparing(Issue::getUpdatedAt))
+                .toList();
+
+        int totalDone = doneIssues.size();
+        List<AnalyticsDataDto.CompletionBucket> completionData = new ArrayList<>();
+        for (int index = 0; index < 4; index++) {
+            int completed = totalDone == 0 ? 0 : (int) Math.ceil(((index + 1) / 4.0) * totalDone);
+            completionData.add(new AnalyticsDataDto.CompletionBucket("Week " + (index + 1), completed));
+        }
+        return completionData;
+    }
+
+    private List<AnalyticsDataDto.VelocityBucket> buildVelocityData(String projectId, List<Issue> projectIssues) {
+        Map<String, Long> completedBySprintId = projectIssues.stream()
+                .filter(issue -> "done".equals(issue.getStatus()))
+                .filter(issue -> issue.getSprintId() != null && !issue.getSprintId().isBlank())
+                .collect(Collectors.groupingBy(Issue::getSprintId, LinkedHashMap::new, Collectors.counting()));
+
+        return sprintRepository.findByProjectId(projectId).stream()
+                .sorted(Comparator.comparing(sprint -> sprint.getStartDate() == null ? "" : sprint.getStartDate()))
+                .map(sprint -> new AnalyticsDataDto.VelocityBucket(
+                        sprint.getName(),
+                        completedBySprintId.getOrDefault(sprint.getId(), 0L).intValue()))
+                .toList();
     }
 }

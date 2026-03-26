@@ -4,10 +4,12 @@ import type { User } from '@/types/user';
 import type { Workspace, WorkspaceRole } from '@/types/workspace';
 
 interface SessionState {
+  hasHydrated: boolean;
   currentUser: User | null;
   currentWorkspace: Workspace | null;
   currentRole: WorkspaceRole | null;
   token: string | null;
+  setHasHydrated: (hasHydrated: boolean) => void;
   setCurrentUser: (user: User | null) => void;
   setCurrentWorkspace: (workspace: Workspace | null) => void;
   setCurrentRole: (role: WorkspaceRole | null) => void;
@@ -18,10 +20,12 @@ interface SessionState {
 export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({
+      hasHydrated: false,
       currentUser: null,
       currentWorkspace: null,
       currentRole: null,
       token: null,
+      setHasHydrated: (hasHydrated) => set({ hasHydrated }),
       setCurrentUser: (currentUser) => set({ currentUser }),
       setCurrentWorkspace: (currentWorkspace) => set({ currentWorkspace }),
       setCurrentRole: (currentRole) => set({ currentRole }),
@@ -30,6 +34,9 @@ export const useSessionStore = create<SessionState>()(
     }),
     {
       name: 'jeerai-session',
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );

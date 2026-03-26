@@ -17,6 +17,17 @@ export function useProject(id: string) {
   });
 }
 
+export function useCreateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: projectApi.create,
+    onSuccess: (created) => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.setQueryData(['project', created.id], created);
+    },
+  });
+}
+
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({

@@ -2,12 +2,14 @@ package com.jeerai.backend.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.model.Invitation;
 import com.jeerai.backend.model.Workspace;
 
 @Service
+@ConditionalOnMissingBean(InvitationDeliveryService.class)
 public class NoOpInvitationDeliveryService implements InvitationDeliveryService {
 
     private static final Logger log = LoggerFactory.getLogger(NoOpInvitationDeliveryService.class);

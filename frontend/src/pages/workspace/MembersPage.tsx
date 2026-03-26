@@ -1,13 +1,7 @@
-import { PageContainer } from '@/components/layout/PageContainer';
 import { useState } from 'react';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+import { format } from 'date-fns';
+
+import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +13,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useSessionStore } from '@/store/session.store';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { useCreateInvitation, useInvitations } from '@/queries/invitation.queries';
 import { useWorkspaceMembers } from '@/queries/workspace.queries';
+import { useSessionStore } from '@/store/session.store';
 import type { WorkspaceRole } from '@/types/workspace';
 
 export default function MembersPage() {
@@ -104,7 +106,7 @@ export default function MembersPage() {
               <TableRow key={member.id}>
                 <TableCell>
                   <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center text-xs font-medium">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-muted text-xs font-medium">
                       {member.user.name.charAt(0)}
                     </div>
                     <span className="text-sm font-medium">{member.user.name}</span>
@@ -129,10 +131,10 @@ export default function MembersPage() {
                 <div>
                   <p className="text-sm font-medium">{invitation.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {invitation.role} · {invitation.status}
+                    {invitation.role} {'\u00b7'} {invitation.status}
                   </p>
                 </div>
-                <Badge variant="outline">{new Date(invitation.expiresAt).toLocaleDateString()}</Badge>
+                <Badge variant="outline">{format(new Date(invitation.createdAt), 'MMM d, yyyy')}</Badge>
               </div>
             ))}
           </div>

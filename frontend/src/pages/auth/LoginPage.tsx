@@ -78,6 +78,10 @@ export default function LoginPage() {
         Sign in
       </Button>
       <div className="text-center text-sm text-muted-foreground">
+        <Link to={ROUTES.AUTH.SIGNUP} className="hover:underline">
+          Create account
+        </Link>
+        {' · '}
         <Link to={ROUTES.AUTH.FORGOT_PASSWORD} className="hover:underline">
           Forgot password?
         </Link>

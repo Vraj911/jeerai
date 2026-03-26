@@ -8,7 +8,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
@@ -25,7 +27,6 @@ import com.jeerai.backend.security.CurrentUserProvider;
 @Service
 public class InvitationService {
 
-    private static final String INVITE_BASE_URL = "https://jeerai.com/invite/";
     private static final int DEFAULT_EXPIRY_DAYS = 7;
 
     private final InvitationRepository invitationRepository;
@@ -34,6 +35,7 @@ public class InvitationService {
     private final UserService userService;
     private final InvitationDeliveryService invitationDeliveryService;
     private final CurrentUserProvider currentUserProvider;
+    private final String inviteBaseUrl;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public InvitationService(
@@ -42,15 +44,18 @@ public class InvitationService {
             WorkspaceMemberService workspaceMemberService,
             UserService userService,
             InvitationDeliveryService invitationDeliveryService,
-            CurrentUserProvider currentUserProvider) {
+            CurrentUserProvider currentUserProvider,
+            @Value("${app.invitation.base-url:http://localhost:5173/invite/}") String inviteBaseUrl) {
         this.invitationRepository = invitationRepository;
         this.workspaceService = workspaceService;
         this.workspaceMemberService = workspaceMemberService;
         this.userService = userService;
         this.invitationDeliveryService = invitationDeliveryService;
         this.currentUserProvider = currentUserProvider;
+        this.inviteBaseUrl = inviteBaseUrl;
     }
 
+    @Transactional
     public InvitationDto createInvitation(String workspaceId, CreateInvitationRequest request) {
         Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
         workspaceMemberService.checkAdminAccess(workspaceId, currentUserProvider.getCurrentUserId());
@@ -202,6 +207,7 @@ public class InvitationService {
     }
 
     private String buildInviteLink(String token) {
-        return INVITE_BASE_URL + token;
+        String normalizedBaseUrl = inviteBaseUrl.endsWith("/") ? inviteBaseUrl : inviteBaseUrl + "/";
+        return normalizedBaseUrl + token;
     }
 }

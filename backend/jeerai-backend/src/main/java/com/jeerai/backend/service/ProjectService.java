@@ -3,26 +3,38 @@ package com.jeerai.backend.service;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import com.jeerai.backend.dto.ProjectCreateRequest;
 import com.jeerai.backend.dto.ProjectDto;
 import com.jeerai.backend.dto.ProjectUpdateRequest;
 import com.jeerai.backend.dto.UserDto;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.User;
 import com.jeerai.backend.repository.ProjectRepository;
+import com.jeerai.backend.repository.UserRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class ProjectService {
 
     private final ProjectRepository projectRepository;
     private final WorkspaceAccessService workspaceAccessService;
+    private final UserRepository userRepository;
+    private final CurrentUserProvider currentUserProvider;
 
-    public ProjectService(ProjectRepository projectRepository, WorkspaceAccessService workspaceAccessService) {
+    public ProjectService(
+            ProjectRepository projectRepository,
+            WorkspaceAccessService workspaceAccessService,
+            UserRepository userRepository,
+            CurrentUserProvider currentUserProvider) {
         this.projectRepository = projectRepository;
         this.workspaceAccessService = workspaceAccessService;
+        this.userRepository = userRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public List<ProjectDto> getAll() {
@@ -32,6 +44,44 @@ public class ProjectService {
                 .sorted(Comparator.comparing(Project::getUpdatedAt, Comparator.nullsLast(Comparator.reverseOrder())))
                 .map(this::toDto)
                 .collect(Collectors.toList());
+    }
+
+    public ProjectDto create(ProjectCreateRequest request) {
+        if (request.getWorkspaceId() == null || request.getWorkspaceId().isBlank()) {
+            throw new BadRequestException("Workspace is required");
+        }
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new BadRequestException("Project name is required");
+        }
+        if (request.getKey() == null || request.getKey().isBlank()) {
+            throw new BadRequestException("Project key is required");
+        }
+
+        workspaceAccessService.requireWorkspaceAdminAccess(request.getWorkspaceId());
+
+        String normalizedKey = request.getKey().trim().toUpperCase();
+        boolean duplicateKey = projectRepository.findAll().stream()
+                .anyMatch(project -> normalizedKey.equalsIgnoreCase(project.getKey()));
+        if (duplicateKey) {
+            throw new BadRequestException("Project key already exists");
+        }
+
+        User lead = userRepository.findById(currentUserProvider.getCurrentUserId())
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
+
+        Instant now = Instant.now();
+        Project project = new Project(
+                UUID.randomUUID().toString(),
+                normalizedKey,
+                request.getName().trim(),
+                request.getDescription() == null ? "" : request.getDescription().trim(),
+                lead,
+                List.of(lead),
+                now,
+                now,
+                request.getWorkspaceId());
+
+        return toDto(projectRepository.save(project));
     }
 
     public ProjectDto getById(String id) {

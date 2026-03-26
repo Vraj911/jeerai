@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/theme.store';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUsers } from '@/queries/user.queries';
 import { ROUTES } from '@/routes/routeConstants';
-import { Search, Plus, Command, Sun, Moon } from 'lucide-react';
+import { Search, Plus, Command, Sun, Moon, LogOut, Settings, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { fuzzyMatch } from '@/lib/search';
@@ -14,6 +14,15 @@ import { useIssues } from '@/queries/issue.queries';
 import { useProjects } from '@/queries/project.queries';
 import { APP_NAME } from '@/lib/constants';
 import { useSessionStore } from '@/store/session.store';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type SearchEntity =
   | { id: string; label: string; value: string; route: string; group: 'Issues'; meta: string }
@@ -24,7 +33,9 @@ export function Topbar() {
   const { setIssueCreateModalOpen, globalSearchOpen, setGlobalSearchOpen } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
   const { theme, toggleTheme } = useThemeStore();
+  const currentUser = useSessionStore((state) => state.currentUser);
   const currentRole = useSessionStore((state) => state.currentRole);
+  const clearSession = useSessionStore((state) => state.clearSession);
   const location = useLocation();
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
@@ -131,6 +142,13 @@ export function Topbar() {
     navigate(item.route);
     setGlobalSearchOpen(false);
     setSearchQuery('');
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setGlobalSearchOpen(false);
+    setSearchQuery('');
+    navigate(ROUTES.AUTH.LOGIN, { replace: true });
   };
 
   const canCreateIssues = currentRole !== 'VIEWER';
@@ -266,11 +284,51 @@ export function Topbar() {
         {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
 
-      <img
-        src={theme === 'light' ? '/JeerAi-light.png' : '/JeerAi.png'}
-        alt={`${APP_NAME} logo`}
-        className="h-9 w-9 rounded-md ml-1 object-contain"
-      />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="ml-1 flex items-center gap-2 rounded-md border px-2 py-1 hover:bg-accent"
+            aria-label="Open account menu"
+          >
+            <Avatar className="h-7 w-7">
+              <AvatarFallback className="text-xs">
+                {currentUser?.name?.charAt(0)?.toUpperCase() ?? 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <div className="hidden text-left sm:block">
+              <div className="max-w-28 truncate text-xs font-medium text-foreground">
+                {currentUser?.name ?? APP_NAME}
+              </div>
+              <div className="text-[10px] uppercase text-muted-foreground">
+                {currentRole ?? 'No role'}
+              </div>
+            </div>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="space-y-1">
+            <div className="text-sm font-medium">{currentUser?.name ?? 'Account'}</div>
+            <div className="text-xs font-normal text-muted-foreground">{currentUser?.email ?? ''}</div>
+            <div className="text-[10px] uppercase text-muted-foreground">Workspace role: {currentRole ?? 'Unknown'}</div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => navigate(ROUTES.APP.MEMBERS)}>
+            <UserRound className="mr-2 h-4 w-4" />
+            Members
+          </DropdownMenuItem>
+          {(currentRole === 'OWNER' || currentRole === 'ADMIN') && (
+            <DropdownMenuItem onClick={() => navigate(ROUTES.APP.WORKSPACE_SETTINGS)}>
+              <Settings className="mr-2 h-4 w-4" />
+              Workspace settings
+            </DropdownMenuItem>
+          )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
+            <LogOut className="mr-2 h-4 w-4" />
+            Logout
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </header>
   );
 }

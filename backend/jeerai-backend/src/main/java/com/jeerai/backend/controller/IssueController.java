@@ -2,7 +2,9 @@ package com.jeerai.backend.controller;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -67,8 +69,12 @@ public class IssueController {
     }
 
     @PostMapping(path = "/simulate-random-update", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Issue simulateRandomUpdate(@RequestBody(required = false) RandomUpdateRequest request) {
+    public ResponseEntity<Issue> simulateRandomUpdate(@RequestBody(required = false) RandomUpdateRequest request) {
         Double value = request == null ? null : request.getRandomValue();
-        return issueService.simulateRandomUpdate(value);
+        Issue issue = issueService.simulateRandomUpdate(value);
+        if (issue == null) {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+        return ResponseEntity.ok(issue);
     }
 }

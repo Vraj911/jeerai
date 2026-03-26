@@ -43,8 +43,8 @@ export const issueApi = {
     return issueApi.update(id, { priority });
   },
 
-  simulateRandomUpdate: async (randomValue: number): Promise<Issue> => {
-    const { data } = await apiClient.post<Issue>('/issues/simulate-random-update', { randomValue });
+  simulateRandomUpdate: async (randomValue: number): Promise<Issue | null> => {
+    const { data } = await apiClient.post<Issue | null>('/issues/simulate-random-update', { randomValue });
     return data;
   },
 };
