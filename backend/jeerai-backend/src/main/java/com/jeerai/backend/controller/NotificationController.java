@@ -4,6 +4,8 @@ import java.util.List;
 
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -23,5 +25,15 @@ public class NotificationController {
     @GetMapping
     public List<AppNotification> getAll() {
         return notificationService.getAll();
+    }
+
+    @PatchMapping(path = "/{id}/read")
+    public AppNotification markRead(@PathVariable String id) {
+        return notificationService.markRead(id);
+    }
+
+    @PatchMapping(path = "/read-all")
+    public List<AppNotification> markAllRead() {
+        return notificationService.markAllRead();
     }
 }

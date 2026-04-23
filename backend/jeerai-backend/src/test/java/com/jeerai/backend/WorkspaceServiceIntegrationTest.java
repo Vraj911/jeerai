@@ -38,7 +38,8 @@ class WorkspaceServiceIntegrationTest {
                         "$2a$10$bXzF2YQP21RkRzHb0SlULuKov4Nq/aXqkOvkjJSajWMdZvEEyoWla"));
         SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                 new AuthenticatedUser(authenticatedUser.getId(), authenticatedUser.getEmail()),
-                null));
+                null,
+                java.util.List.of()));
     }
 
     @AfterEach

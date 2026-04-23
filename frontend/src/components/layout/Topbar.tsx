@@ -6,7 +6,7 @@ import { useThemeStore } from '@/store/theme.store';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUsers } from '@/queries/user.queries';
 import { ROUTES } from '@/routes/routeConstants';
-import { Search, Command, Sun, Moon, LogOut, UserRound } from 'lucide-react';
+import { Search, Command, Sun, Moon, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fuzzyMatch } from '@/lib/search';
 import { useIssues } from '@/queries/issue.queries';
@@ -287,11 +287,6 @@ export function Topbar() {
             <div className="text-xs font-normal text-muted-foreground">{currentUser?.email ?? ''}</div>
             <div className="text-[10px] uppercase text-muted-foreground">Workspace role: {currentRole ?? 'Unknown'}</div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate(ROUTES.APP.MEMBERS)}>
-            <UserRound className="mr-2 h-4 w-4" />
-            Members
-          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />

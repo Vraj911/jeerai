@@ -669,3 +669,13 @@ These warnings are not all equal. The real failures are usually:
 - `.env.properties` is the intended local override file
 - persistence is DB-backed by default
 - `AiService` is currently placeholder logic, not a real AI integration
+
+## Recent Backend Updates
+
+- `POST /api/projects` now exists and creates a project inside the caller's current workspace-admin scope.
+- `POST /api/issues/simulate-random-update` no longer returns `404` when no writable issues exist; it now returns `204 No Content`.
+- `AnalyticsService` no longer hardcodes completion and velocity demo buckets; those values are now derived from actual project issues and sprints.
+- notifications now support persisted read state:
+  - `PATCH /api/notifications/{id}/read`
+  - `PATCH /api/notifications/read-all`
+- notification read/unread status now survives refresh because the backend is the source of truth rather than only frontend store state.

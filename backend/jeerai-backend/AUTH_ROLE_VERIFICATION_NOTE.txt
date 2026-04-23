@@ -19,6 +19,7 @@ The current app has:
 - frontend session persistence using Zustand
 - frontend protected routes
 - role-aware UI behavior for inviting members, creating projects, and issue actions
+- persisted notification read state behind protected APIs
 
 
 2. Backend auth architecture
@@ -211,6 +212,12 @@ Workspace creation:
 - authenticated user creates workspace
 - creator becomes OWNER automatically
 
+Project creation:
+
+- only authenticated OWNER or ADMIN in the workspace can create a project
+- project creation is authorized by workspace membership derived from JWT, not from caller-supplied user ids
+- created project is attached to the selected workspace and uses the authenticated user as lead
+
 Membership access:
 
 - workspace endpoints validate that current authenticated user belongs to the workspace
@@ -240,6 +247,12 @@ Invitation acceptance:
 - invitation must not be expired
 - invitation email must match the authenticated user email
 - accepting invite creates workspace membership using invitation role
+
+Notifications:
+
+- notification APIs are protected under /api/**
+- marking one notification read or marking all read requires authentication
+- read state is now persisted on the backend, so refresh does not revert notifications to unread
 
 
 9. Invitation workflow
@@ -349,11 +362,11 @@ Examples:
 - Projects page:
   - create-project action is shown only to OWNER or ADMIN
 
-- Topbar:
-  - VIEWER is restricted from create-issue capability
-
 - Sidebar:
   - role-aware navigation behavior exists
+
+- Notifications page:
+  - mark-read and mark-all-read actions now persist through protected backend APIs instead of local-only UI state
 
 Relevant frontend files:
 
@@ -369,7 +382,8 @@ Frontend uses a protected route wrapper.
 
 Current behavior:
 
-- if currentUser is missing, route redirects to login
+- protected routing waits for persisted session hydration before deciding whether to redirect
+- if currentUser is missing after hydration, route redirects to login
 - protected app shell requires a logged-in user
 
 Relevant frontend file:
@@ -391,6 +405,8 @@ Already integrated and working conceptually:
 - members listing is wired
 - current role is derived in UI from workspace member list
 - UI uses currentRole to show/hide some actions
+- notification read state is persisted through backend endpoints
+- project creation is no longer a toast-only frontend action; it is backed by a protected backend endpoint
 
 
 15. Important implementation notes for verification
@@ -418,6 +434,10 @@ These are useful for GPT/code-review style verification.
 6. Invitation acceptance currently requires an authenticated user whose email matches the invitation email.
    This is stricter than many public-invite flows and should be considered intentional unless product requirements say otherwise.
 
+7. Notification unread/read state should now be verified against backend persistence, not only frontend store behavior.
+
+8. Project creation should now be verified as an authenticated workspace-admin action, not only as a frontend modal interaction.
+
 
 16. Useful files to inspect for verification
 --------------------------------------------
@@ -431,9 +451,13 @@ Backend:
 - src/main/java/com/jeerai/backend/controller/WorkspaceController.java
 - src/main/java/com/jeerai/backend/controller/WorkspaceMemberController.java
 - src/main/java/com/jeerai/backend/controller/InvitationController.java
+- src/main/java/com/jeerai/backend/controller/ProjectController.java
+- src/main/java/com/jeerai/backend/controller/NotificationController.java
 - src/main/java/com/jeerai/backend/service/WorkspaceService.java
 - src/main/java/com/jeerai/backend/service/WorkspaceMemberService.java
 - src/main/java/com/jeerai/backend/service/InvitationService.java
+- src/main/java/com/jeerai/backend/service/ProjectService.java
+- src/main/java/com/jeerai/backend/service/NotificationService.java
 
 Frontend:
 
@@ -450,6 +474,8 @@ Frontend:
 - frontend/src/pages/workspace/InvitationPage.tsx
 - frontend/src/pages/workspace/MembersPage.tsx
 - frontend/src/pages/workspace/ProjectsPage.tsx
+- frontend/src/pages/system/NotificationsPage.tsx
+- frontend/src/queries/notification.queries.ts
 
 
 17. Short conclusion

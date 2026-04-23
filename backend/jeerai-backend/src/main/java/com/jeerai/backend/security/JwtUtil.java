@@ -60,21 +60,7 @@ public class JwtUtil {
         }
 
         String value = secret.trim();
-        byte[] keyBytes;
-
-        // Support common secret formats:
-        // - Base64 (standard alphabet)
-        // - Base64URL (JWT-friendly alphabet, uses '-' and '_')
-        // - Raw string (fallback)
-        try {
-            keyBytes = Decoders.BASE64.decode(value);
-        } catch (RuntimeException base64Ex) {
-            try {
-                keyBytes = Decoders.BASE64URL.decode(value);
-            } catch (RuntimeException base64UrlEx) {
-                keyBytes = value.getBytes(StandardCharsets.UTF_8);
-            }
-        }
+        byte[] keyBytes = decodeKeyMaterial(value);
 
         try {
             return Keys.hmacShaKeyFor(keyBytes);
@@ -85,6 +71,31 @@ public class JwtUtil {
                             + "Tip: generate 32 random bytes and Base64-encode them.",
                     ex
             );
+        }
+    }
+
+    private byte[] decodeKeyMaterial(String value) {
+        byte[] rawBytes = value.getBytes(StandardCharsets.UTF_8);
+
+        // Only accept decoded Base64 variants when they produce a strong enough key.
+        byte[] base64Bytes = tryDecode(Decoders.BASE64, value);
+        if (base64Bytes != null && base64Bytes.length >= 32) {
+            return base64Bytes;
+        }
+
+        byte[] base64UrlBytes = tryDecode(Decoders.BASE64URL, value);
+        if (base64UrlBytes != null && base64UrlBytes.length >= 32) {
+            return base64UrlBytes;
+        }
+
+        return rawBytes;
+    }
+
+    private byte[] tryDecode(io.jsonwebtoken.io.Decoder<CharSequence, byte[]> decoder, String value) {
+        try {
+            return decoder.decode(value);
+        } catch (RuntimeException ex) {
+            return null;
         }
     }
 }

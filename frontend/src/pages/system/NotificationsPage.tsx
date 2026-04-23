@@ -7,20 +7,33 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotificationStore } from '@/store/notification.store';
+import { useMarkAllNotificationsRead, useMarkNotificationRead } from '@/queries/notification.queries';
 
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const { notifications, markAllRead, markRead } = useNotificationStore();
+  const markNotificationRead = useMarkNotificationRead();
+  const markAllNotificationsRead = useMarkAllNotificationsRead();
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
 
   const unreadCount = safeNotifications.filter((n) => !n.read).length;
+
+  const handleMarkAllRead = async () => {
+    markAllRead();
+    await markAllNotificationsRead.mutateAsync();
+  };
+
+  const handleRead = async (id: string) => {
+    markRead(id);
+    await markNotificationRead.mutateAsync(id);
+  };
 
   return (
     <PageContainer
       title="Notifications"
       actions={
         unreadCount > 0 ? (
-          <Button variant="outline" size="sm" onClick={markAllRead}>
+          <Button variant="outline" size="sm" onClick={() => void handleMarkAllRead()}>
             Mark all as read
           </Button>
         ) : undefined
@@ -34,14 +47,14 @@ export default function NotificationsPage() {
         <TabsContent value="all" className="mt-4">
           <NotificationList
             items={safeNotifications}
-            onRead={markRead}
+            onRead={handleRead}
             onNavigate={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
           />
         </TabsContent>
         <TabsContent value="unread" className="mt-4">
           <NotificationList
             items={safeNotifications.filter((n) => !n.read)}
-            onRead={markRead}
+            onRead={handleRead}
             onNavigate={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
           />
         </TabsContent>

@@ -24,4 +24,14 @@ export const notificationApi = {
     const { data } = await apiClient.get<unknown>('/notifications');
     return normalizeNotifications(data);
   },
+
+  markRead: async (id: string): Promise<AppNotification> => {
+    const { data } = await apiClient.patch<AppNotification>(`/notifications/${id}/read`);
+    return data;
+  },
+
+  markAllRead: async (): Promise<AppNotification[]> => {
+    const { data } = await apiClient.patch<AppNotification[]>('/notifications/read-all');
+    return data;
+  },
 };
