@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/routes/routeConstants';
 import { workspaceApi } from '@/api/workspace.api';
 import { authApi } from '@/api/auth.api';
+import { getApiErrorMessage } from '@/api/apiError';
 import { useSessionStore } from '@/store/session.store';
 
 export default function LoginPage() {
@@ -33,21 +34,25 @@ export default function LoginPage() {
       return;
     }
 
-    const auth = await authApi.login({ email: normalizedEmail, password });
-    setToken(auth.token);
-    setCurrentUser(auth.user);
-    const workspaces = await workspaceApi.getAll(auth.user.id);
+    try {
+      const auth = await authApi.login({ email: normalizedEmail, password });
+      setToken(auth.token);
+      setCurrentUser(auth.user);
+      const workspaces = await workspaceApi.getAll(auth.user.id);
 
-    if (workspaces.length === 0) {
-      setCurrentWorkspace(null);
+      if (workspaces.length === 0) {
+        setCurrentWorkspace(null);
+        setCurrentRole(null);
+        navigate(ROUTES.ONBOARDING);
+        return;
+      }
+
+      setCurrentWorkspace(workspaces[0]);
       setCurrentRole(null);
-      navigate(ROUTES.ONBOARDING);
-      return;
+      navigate(ROUTES.APP.DASHBOARD);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Login failed'));
     }
-
-    setCurrentWorkspace(workspaces[0]);
-    setCurrentRole(null);
-    navigate(ROUTES.APP.DASHBOARD);
   };
 
   return (

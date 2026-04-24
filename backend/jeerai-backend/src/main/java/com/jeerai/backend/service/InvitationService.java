@@ -45,7 +45,7 @@ public class InvitationService {
             UserService userService,
             InvitationDeliveryService invitationDeliveryService,
             CurrentUserProvider currentUserProvider,
-            @Value("${app.invitation.base-url:http://localhost:5173/invite/}") String inviteBaseUrl) {
+            @Value("${app.invitation.base-url:https://jeerai.netlify.app/invite/}") String inviteBaseUrl) {
         this.invitationRepository = invitationRepository;
         this.workspaceService = workspaceService;
         this.workspaceMemberService = workspaceMemberService;

@@ -7,6 +7,7 @@ import { ROUTES } from '@/routes/routeConstants';
 import { useCreateWorkspace } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
 import { authApi } from '@/api/auth.api';
+import { getApiErrorMessage } from '@/api/apiError';
 
 export default function SignupPage() {
   const [workspaceName, setWorkspaceName] = useState('');
@@ -46,22 +47,26 @@ export default function SignupPage() {
       return;
     }
 
-    const auth = await authApi.signup({
-      name: name.trim(),
-      email: normalizedEmail,
-      password,
-    });
-    setToken(auth.token);
-    setCurrentUser(auth.user);
+    try {
+      const auth = await authApi.signup({
+        name: name.trim(),
+        email: normalizedEmail,
+        password,
+      });
+      setToken(auth.token);
+      setCurrentUser(auth.user);
 
-    const workspace = await createWorkspace.mutateAsync({
-      name: workspaceName,
-      ownerUserId: auth.user.id,
-      ownerName: auth.user.name,
-      ownerEmail: auth.user.email,
-    });
-    setCurrentWorkspace(workspace);
-    navigate(ROUTES.APP.DASHBOARD);
+      const workspace = await createWorkspace.mutateAsync({
+        name: workspaceName,
+        ownerUserId: auth.user.id,
+        ownerName: auth.user.name,
+        ownerEmail: auth.user.email,
+      });
+      setCurrentWorkspace(workspace);
+      navigate(ROUTES.APP.DASHBOARD);
+    } catch (err) {
+      setError(getApiErrorMessage(err, 'Signup failed'));
+    }
   };
 
   return (
