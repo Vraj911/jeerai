@@ -2,7 +2,6 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { User } from '@/types/user';
 import type { Workspace, WorkspaceRole } from '@/types/workspace';
-
 interface SessionState {
   hasHydrated: boolean;
   currentUser: User | null;
@@ -16,7 +15,6 @@ interface SessionState {
   setToken: (token: string | null) => void;
   clearSession: () => void;
 }
-
 export const useSessionStore = create<SessionState>()(
   persist(
     (set) => ({

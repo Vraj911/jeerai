@@ -1,8 +1,6 @@
 import type { User } from './user';
-
 export type IssueStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type IssuePriority = 'highest' | 'high' | 'medium' | 'low' | 'lowest';
-
 export interface Issue {
   id: string;
   key: string;

@@ -1,6 +1,5 @@
 import { Outlet } from 'react-router-dom';
 import { APP_NAME } from '@/lib/constants';
-
 export function AuthLayout() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-secondary/50">

@@ -15,18 +15,15 @@ import {
   Line,
   Legend,
 } from 'recharts';
-
 const CHART_COLORS = {
   todo: 'hsl(var(--muted-foreground))',
   inProgress: 'hsl(var(--primary))',
   review: 'hsl(217 91% 60%)',
   done: 'hsl(142 71% 45%)',
 };
-
 export default function AnalyticsPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data, isLoading } = useProjectAnalytics(projectId ?? '');
-
   if (isLoading || !data) {
     return (
       <PageContainer title="Analytics">
@@ -37,12 +34,10 @@ export default function AnalyticsPage() {
       </PageContainer>
     );
   }
-
   const statusData = data.issuesByStatus.map((d) => ({
     ...d,
     name: STATUS_LABELS[d.status] ?? d.status,
   }));
-
   return (
     <PageContainer title="Analytics">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -64,7 +59,6 @@ export default function AnalyticsPage() {
             </LineChart>
           </ResponsiveContainer>
         </div>
-
         <div className="rounded-md border p-4">
           <h3 className="text-sm font-medium mb-4">Velocity</h3>
           <ResponsiveContainer width="100%" height={240}>
@@ -77,7 +71,6 @@ export default function AnalyticsPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         <div className="rounded-md border p-4">
           <h3 className="text-sm font-medium mb-4">Issues by Status</h3>
           <ResponsiveContainer width="100%" height={240}>
@@ -90,7 +83,6 @@ export default function AnalyticsPage() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
         <div className="rounded-md border p-4 lg:col-span-2">
           <h3 className="text-sm font-medium mb-4">Workload Distribution</h3>
           <ResponsiveContainer width="100%" height={280}>

@@ -27,7 +27,6 @@ import {
   Settings,
   PanelTop,
 } from 'lucide-react';
-
 type PaletteItem = {
   id: string;
   label: string;
@@ -36,20 +35,17 @@ type PaletteItem = {
   execute: () => void;
   shortcut?: string;
 };
-
 export function CommandPalette() {
   const { open, setOpen, query, setQuery } = useCommandStore();
   const { setIssueCreateModalOpen } = useUIStore();
   const navigate = useNavigate();
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
-
   const runCommand = (fn: () => void) => {
     setOpen(false);
     setQuery('');
     fn();
   };
-
   const navigationItems = useMemo<PaletteItem[]>(
     () => [
       {
@@ -106,7 +102,6 @@ export function CommandPalette() {
     ],
     [navigate]
   );
-
   const actionItems = useMemo<PaletteItem[]>(
     () => [
       {
@@ -127,7 +122,6 @@ export function CommandPalette() {
     ],
     [navigate, setIssueCreateModalOpen]
   );
-
   const projectItems = useMemo<PaletteItem[]>(
     () =>
       projects.map((project) => ({
@@ -139,7 +133,6 @@ export function CommandPalette() {
       })),
     [navigate, projects]
   );
-
   const issueItems = useMemo<PaletteItem[]>(
     () =>
       issues.map((issue) => ({
@@ -151,12 +144,10 @@ export function CommandPalette() {
       })),
     [issues, navigate]
   );
-
   const filteredNavigation = fuzzyMatch(query, navigationItems, (item) => item.value).slice(0, 8);
   const filteredActions = fuzzyMatch(query, actionItems, (item) => item.value).slice(0, 6);
   const filteredProjects = fuzzyMatch(query, projectItems, (item) => item.value).slice(0, 8);
   const filteredIssues = fuzzyMatch(query, issueItems, (item) => item.value).slice(0, 12);
-
   return (
     <CommandDialog open={open} onOpenChange={setOpen} aria-describedby={undefined}>
       <CommandInput
@@ -167,7 +158,6 @@ export function CommandPalette() {
       />
       <CommandList>
         <CommandEmpty>No results found.</CommandEmpty>
-
         <CommandGroup heading="Navigation">
           {filteredNavigation.map((item) => (
             <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
@@ -187,7 +177,6 @@ export function CommandPalette() {
             </CommandItem>
           ))}
         </CommandGroup>
-
         <CommandGroup heading="Switch Project">
           {filteredProjects.map((item) => (
             <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
@@ -196,7 +185,6 @@ export function CommandPalette() {
             </CommandItem>
           ))}
         </CommandGroup>
-
         <CommandGroup heading="Issues">
           {filteredIssues.map((item) => (
             <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>

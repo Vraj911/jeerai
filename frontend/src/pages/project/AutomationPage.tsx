@@ -40,73 +40,60 @@ const TRIGGER_OPTIONS: { value: TriggerType; label: string }[] = [
   { value: 'assignee_change', label: 'Assignee Updated' },
   { value: 'priority_change', label: 'Priority Changed' },
 ];
-
 const CONDITION_OPTIONS: { value: ConditionType; label: string }[] = [
   { value: 'status_is', label: 'Status equals' },
   { value: 'priority_is', label: 'Priority equals' },
   { value: 'assignee_is', label: 'Assignee equals' },
   { value: 'label_contains', label: 'Label contains' },
 ];
-
 const ACTION_OPTIONS: { value: ActionType; label: string }[] = [
   { value: 'change_status', label: 'Change Status' },
   { value: 'assign_user', label: 'Assign User' },
   { value: 'add_label', label: 'Add Label' },
   { value: 'send_notification', label: 'Send Notification' },
 ];
-
 const STATUS_OPTIONS = Object.entries(STATUS_LABELS).map(([value, label]) => ({ value, label }));
 const PRIORITY_OPTIONS = Object.entries(PRIORITY_LABELS).map(([value, label]) => ({ value, label }));
 const EMPTY_TRIGGER_VALUE = '__any__';
 const EMPTY_ACTION_VALUE = '__none__';
-
 function findUserName(users: User[], id: string): string {
   return users.find((u) => u.id === id)?.name ?? id;
 }
-
 function formatTriggerValue(type: TriggerType, value: string, users: User[]): string {
   if (type === 'status_change') return STATUS_LABELS[value] ?? value;
   if (type === 'priority_change') return PRIORITY_LABELS[value] ?? value;
   if (type === 'assignee_change') return findUserName(users, value);
   return value || 'any';
 }
-
 function formatConditionValue(type: ConditionType, value: string, users: User[]): string {
   if (type === 'status_is') return STATUS_LABELS[value] ?? value;
   if (type === 'priority_is') return PRIORITY_LABELS[value] ?? value;
   if (type === 'assignee_is') return findUserName(users, value);
   return value;
 }
-
 function formatActionValue(type: ActionType, value: string, users: User[]): string {
   if (type === 'assign_user') return findUserName(users, value);
   if (type === 'change_status') return STATUS_LABELS[value] ?? value;
   return value;
 }
-
 function normalizeTriggerValueForState(type: TriggerType, value: string) {
   return type === 'issue_created' ? value || EMPTY_TRIGGER_VALUE : value;
 }
-
 function normalizeActionValueForState(type: ActionType, value: string) {
   return type === 'send_notification' ? value || EMPTY_ACTION_VALUE : value;
 }
-
 function normalizeTriggerValueForPayload(value: string) {
   return value === EMPTY_TRIGGER_VALUE ? '' : value;
 }
-
 function normalizeActionValueForPayload(value: string) {
   return value === EMPTY_ACTION_VALUE ? '' : value;
 }
-
 interface RuleBuilderProps {
   projectId: string;
   onClose: () => void;
   editRule?: AutomationRule | null;
   users: User[];
 }
-
 function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) {
   const { toast } = useToast();
   const createRule = useCreateAutomationRule();
@@ -127,25 +114,21 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
   const [actionValue, setActionValue] = useState(
     normalizeActionValueForState((editRule?.action.type as ActionType) ?? 'change_status', editRule?.action.value ?? '')
   );
-
   const getTriggerValueOptions = () => {
     if (triggerType === 'status_change') return STATUS_OPTIONS;
     if (triggerType === 'priority_change') return PRIORITY_OPTIONS;
     if (triggerType === 'assignee_change') return users.map((u) => ({ value: u.id, label: u.name }));
     return [{ value: EMPTY_TRIGGER_VALUE, label: 'Any' }];
   };
-
   const getActionValueOptions = () => {
     if (actionType === 'change_status') return STATUS_OPTIONS;
     if (actionType === 'assign_user') return users.map((u) => ({ value: u.id, label: u.name }));
     if (actionType === 'add_label') return [{ value: 'critical', label: 'critical' }];
     return [{ value: EMPTY_ACTION_VALUE, label: 'No extra value' }];
   };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
-
     const payload = {
       name: name.trim(),
       projectId,
@@ -154,12 +137,10 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
       action: { type: actionType, value: normalizeActionValueForPayload(actionValue) },
       enabled: true,
     };
-
     if (editRule) {
       updateRule.mutate({ id: editRule.id, data: payload }, { onSuccess: onClose });
       return;
     }
-
     createRule.mutate(payload, {
       onSuccess: () => {
         toast({ title: 'Rule created', description: 'Automation rule has been created.' });
@@ -167,14 +148,12 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
       },
     });
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6 rounded-md border p-4 bg-background">
       <div className="space-y-2">
         <Label>Rule Name</Label>
         <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Auto-assign on Review" />
       </div>
-
       <div className="space-y-3">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">WHEN</div>
         <div className="flex gap-2 flex-wrap">
@@ -184,8 +163,7 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
               const nextType = v as TriggerType;
               setTriggerType(nextType);
               setTriggerValue(normalizeTriggerValueForState(nextType, ''));
-            }}
-          >
+            }}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>
               {TRIGGER_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
@@ -201,7 +179,6 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
           )}
         </div>
       </div>
-
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">IF</div>
@@ -230,7 +207,6 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
           </div>
         ))}
       </div>
-
       <div className="space-y-3">
         <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">THEN</div>
         <div className="flex gap-2 flex-wrap">
@@ -240,8 +216,7 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
               const nextType = v as ActionType;
               setActionType(nextType);
               setActionValue(normalizeActionValueForState(nextType, ''));
-            }}
-          >
+            }}>
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{ACTION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
@@ -251,7 +226,6 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
           </Select>
         </div>
       </div>
-
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
         <Button type="submit" size="sm" disabled={!name.trim()}>{editRule ? 'Update Rule' : 'Create Rule'}</Button>
@@ -259,7 +233,6 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
     </form>
   );
 }
-
 export default function AutomationPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: rules, isLoading } = useAutomationRules(projectId ?? '');
@@ -269,7 +242,6 @@ export default function AutomationPage() {
   const { toast } = useToast();
   const [builderOpen, setBuilderOpen] = useState(false);
   const [editingRule, setEditingRule] = useState<AutomationRule | null>(null);
-
   if (isLoading) {
     return (
       <PageContainer title="Automation">
@@ -277,9 +249,7 @@ export default function AutomationPage() {
       </PageContainer>
     );
   }
-
   const ruleList = rules ?? [];
-
   return (
     <PageContainer title="Automation">
       <div className="space-y-6">
@@ -291,7 +261,6 @@ export default function AutomationPage() {
             <Plus className="h-4 w-4 mr-2" />Create Rule
           </Button>
         </div>
-
         {builderOpen && (
           <RuleBuilder
             projectId={projectId ?? ''}
@@ -303,7 +272,6 @@ export default function AutomationPage() {
             editRule={editingRule}
           />
         )}
-
         {ruleList.length === 0 && !builderOpen ? (
           <EmptyState
             title="No automation rules"
@@ -344,8 +312,7 @@ export default function AutomationPage() {
                     variant="ghost"
                     size="sm"
                     className="text-destructive hover:text-destructive"
-                    onClick={() => deleteRule.mutate(rule.id, { onSuccess: () => toast({ title: 'Rule deleted' }) })}
-                  >
+                    onClick={() => deleteRule.mutate(rule.id, { onSuccess: () => toast({ title: 'Rule deleted' }) })} >
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>

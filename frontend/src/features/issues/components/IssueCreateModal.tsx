@@ -20,7 +20,6 @@ import { useProjects } from '@/queries/project.queries';
 import { useUsers } from '@/queries/user.queries';
 import { useToast } from '@/hooks/use-toast';
 import type { IssueStatus, IssuePriority } from '@/types/issue';
-
 interface IssueCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,7 +29,6 @@ interface IssueCreateModalProps {
   fixedStatus?: IssueStatus;
   title?: string;
 }
-
 export function IssueCreateModal({
   open,
   onOpenChange,
@@ -52,17 +50,14 @@ export function IssueCreateModal({
   const [labelsInput, setLabelsInput] = useState('');
   const createIssue = useCreateIssue();
   const { toast } = useToast();
-
   const labels = labelsInput
     .split(',')
     .map((l) => l.trim().toLowerCase())
     .filter(Boolean);
-
   const selectedProject = useMemo(
     () => projects.find((project) => project.id === projectId),
     [projectId, projects]
   );
-
   useEffect(() => {
     if (!open) {
       return;
@@ -74,7 +69,6 @@ export function IssueCreateModal({
     setLabelsInput('');
     setTitle('');
   }, [open, resolvedProjectId, resolvedStatus]);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
@@ -97,7 +91,6 @@ export function IssueCreateModal({
       }
     );
   };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">

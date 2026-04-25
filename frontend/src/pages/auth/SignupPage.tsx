@@ -8,7 +8,6 @@ import { useCreateWorkspace } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
 import { authApi } from '@/api/auth.api';
 import { getApiErrorMessage } from '@/api/apiError';
-
 export default function SignupPage() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [name, setName] = useState('');
@@ -20,10 +19,8 @@ export default function SignupPage() {
   const setCurrentUser = useSessionStore((state) => state.setCurrentUser);
   const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
   const setToken = useSessionStore((state) => state.setToken);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-
     setError('');
     if (!workspaceName.trim()) {
       setError('Workspace name is required.');
@@ -46,7 +43,6 @@ export default function SignupPage() {
       setError('Password must be at least 8 characters.');
       return;
     }
-
     try {
       const auth = await authApi.signup({
         name: name.trim(),
@@ -55,7 +51,6 @@ export default function SignupPage() {
       });
       setToken(auth.token);
       setCurrentUser(auth.user);
-
       const workspace = await createWorkspace.mutateAsync({
         name: workspaceName,
         ownerUserId: auth.user.id,
@@ -68,7 +63,6 @@ export default function SignupPage() {
       setError(getApiErrorMessage(err, 'Signup failed'));
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-center text-lg font-semibold">Create account</h2>

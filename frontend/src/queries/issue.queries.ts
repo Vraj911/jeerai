@@ -1,14 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { issueApi } from '@/api/issue.api';
 import type { Issue, IssueStatus } from '@/types/issue';
-
 export function useIssues(projectId?: string) {
   return useQuery({
     queryKey: ['issues', projectId],
     queryFn: () => issueApi.getAll(projectId),
   });
 }
-
 export function useIssue(id: string) {
   return useQuery({
     queryKey: ['issue', id],
@@ -16,7 +14,6 @@ export function useIssue(id: string) {
     enabled: !!id,
   });
 }
-
 export function useIssueComments(issueId: string) {
   return useQuery({
     queryKey: ['issue-comments', issueId],
@@ -24,7 +21,6 @@ export function useIssueComments(issueId: string) {
     enabled: !!issueId,
   });
 }
-
 export function useCreateIssue() {
   const qc = useQueryClient();
   return useMutation({
@@ -34,7 +30,6 @@ export function useCreateIssue() {
     },
   });
 }
-
 export function useUpdateIssue() {
   const qc = useQueryClient();
   return useMutation({
@@ -46,7 +41,6 @@ export function useUpdateIssue() {
     },
   });
 }
-
 export function useUpdateIssueStatus() {
   const qc = useQueryClient();
   return useMutation({
@@ -72,7 +66,6 @@ export function useUpdateIssueStatus() {
     },
   });
 }
-
 export function useAddComment() {
   const qc = useQueryClient();
   return useMutation({

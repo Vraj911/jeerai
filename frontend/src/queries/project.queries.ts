@@ -1,14 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectApi } from '@/api/project.api';
 import type { Project } from '@/types/project';
-
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
     queryFn: () => projectApi.getAll(),
   });
 }
-
 export function useProject(id: string) {
   return useQuery({
     queryKey: ['project', id],
@@ -16,7 +14,6 @@ export function useProject(id: string) {
     enabled: !!id,
   });
 }
-
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
@@ -27,7 +24,6 @@ export function useCreateProject() {
     },
   });
 }
-
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({

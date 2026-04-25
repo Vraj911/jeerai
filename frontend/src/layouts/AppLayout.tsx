@@ -11,7 +11,6 @@ import { useCommandStore } from '@/store/command.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { useSessionStore } from '@/store/session.store';
 import { useWorkspaceMembers, useWorkspaces } from '@/queries/workspace.queries';
-
 export function AppLayout() {
   const navigate = useNavigate();
   const hasHydrated = useSessionStore((state) => state.hasHydrated);
@@ -28,55 +27,44 @@ export function AppLayout() {
   const { data: workspaces = [], isLoading: workspacesLoading, isFetched: workspacesFetched } = useWorkspaces();
   const { data: members = [] } = useWorkspaceMembers(currentWorkspace?.id);
   useRealtimeSimulation();
-
   useEffect(() => {
     if (!hasHydrated || !currentUser || workspacesLoading) {
       return;
     }
-
     if (!currentWorkspace && workspaces.length > 0) {
       setCurrentWorkspace(workspaces[0]);
       return;
     }
-
     if (!currentWorkspace && workspacesFetched && workspaces.length === 0) {
       setCurrentWorkspace(null);
       setCurrentRole(null);
       navigate(ROUTES.ONBOARDING, { replace: true });
     }
   }, [currentUser, currentWorkspace, hasHydrated, navigate, setCurrentRole, setCurrentWorkspace, workspaces, workspacesFetched, workspacesLoading]);
-
   useEffect(() => {
     if (!currentUser || !currentWorkspace) {
       setCurrentRole(null);
       return;
     }
-
     const membership = members.find((member) => member.user.id === currentUser.id);
     setCurrentRole(membership?.role ?? null);
   }, [currentUser, currentWorkspace, members, setCurrentRole]);
-
   useEffect(() => {
     let gPressedAt = 0;
-
     const handler = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) return;
-
       const key = e.key.toLowerCase();
       const hasCommand = e.metaKey || e.ctrlKey;
-
       if (hasCommand && key === 'k') {
         e.preventDefault();
         setCommandOpen(true);
         return;
       }
-
       if (!hasCommand && key === 'g') {
         gPressedAt = Date.now();
         return;
       }
-
       if (!hasCommand && Date.now() - gPressedAt < 1200) {
         if (key === 'p') {
           e.preventDefault();
@@ -98,34 +86,28 @@ export function AppLayout() {
           return;
         }
       }
-
       if (!hasCommand && key === 'c') {
         e.preventDefault();
         setIssueCreateModalOpen(true);
         return;
       }
-
       if (!hasCommand && key === '/') {
         e.preventDefault();
         setGlobalSearchOpen(true);
         window.dispatchEvent(new CustomEvent('jeera:focus-global-search'));
         return;
       }
-
       if (key === 'escape') {
         setGlobalSearchOpen(false);
         setCommandOpen(false);
       }
     };
-
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
   }, [navigate, setCommandOpen, setGlobalSearchOpen, setIssueCreateModalOpen]);
-
   if (!hasHydrated || workspacesLoading || !currentWorkspace) {
     return null;
   }
-
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <Sidebar />

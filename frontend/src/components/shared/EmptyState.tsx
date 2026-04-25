@@ -1,11 +1,9 @@
 import { Button } from '@/components/ui/button';
-
 interface EmptyStateProps {
   title: string;
   description: string;
   action?: { label: string; onClick: () => void };
 }
-
 export function EmptyState({ title, description, action }: EmptyStateProps) {
   return (
     <div className="text-center py-12">

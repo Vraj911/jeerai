@@ -18,7 +18,6 @@ import {
   Settings,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-
 interface NavItem {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
@@ -26,7 +25,6 @@ interface NavItem {
   badge?: number;
   pulse?: boolean;
 }
-
 export function Sidebar() {
   const { sidebarCollapsed, toggleSidebar, activityPulse, setActivityPulse } = useUIStore();
   const { notifications } = useNotificationStore();
@@ -36,7 +34,6 @@ export function Sidebar() {
   const location = useLocation();
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const unreadCount = safeNotifications.filter((n) => !n.read).length;
-
   const navItems: NavItem[] = [
     { label: 'Dashboard', icon: LayoutDashboard, path: ROUTES.APP.DASHBOARD },
     { label: 'Projects', icon: FolderKanban, path: ROUTES.APP.PROJECTS },
@@ -50,9 +47,7 @@ export function Sidebar() {
     currentRole === 'OWNER' || currentRole === 'ADMIN'
       ? [{ label: 'Settings', icon: Settings, path: ROUTES.APP.WORKSPACE_SETTINGS }]
       : [];
-
   const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(path + '/');
-
   const renderItem = (item: NavItem) => {
     const active = isActive(item.path);
     const content = (
@@ -68,8 +63,7 @@ export function Sidebar() {
           active
             ? 'bg-accent text-foreground font-medium border-border'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground hover:brightness-[0.99] hover:border-border/70 active:brightness-95'
-        )}
-      >
+        )} >
         <item.icon className="h-4 w-4 shrink-0" />
         {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
         {item.pulse && (
@@ -93,7 +87,6 @@ export function Sidebar() {
         )}
       </Link>
     );
-
     if (sidebarCollapsed) {
       return (
         <Tooltip key={item.path} delayDuration={0}>
@@ -104,10 +97,8 @@ export function Sidebar() {
         </Tooltip>
       );
     }
-
     return <div key={item.path}>{content}</div>;
   };
-
   return (
     <aside
       className="flex flex-col border-r bg-sidebar transition-[width] duration-200 ease-in-out shrink-0"
@@ -139,11 +130,9 @@ export function Sidebar() {
           )}
         </button>
       </div>
-
       <nav className="flex-1 py-2 px-2 space-y-0.5" aria-label="Primary">
         {navItems.map(renderItem)}
       </nav>
-
       <div className="border-t py-2 px-2 space-y-0.5">
         {bottomItems.map(renderItem)}
       </div>

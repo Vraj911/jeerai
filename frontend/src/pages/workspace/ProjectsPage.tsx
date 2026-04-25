@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
 import { useProjects } from '@/queries/project.queries';
 import { useSessionStore } from '@/store/session.store';
-
 export default function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
@@ -17,13 +16,11 @@ export default function ProjectsPage() {
   const { data: projects = [] } = useProjects();
   const currentRole = useSessionStore((state) => state.currentRole);
   const canManageProjects = currentRole === 'OWNER' || currentRole === 'ADMIN';
-
   const filtered = projects.filter(
     (p) =>
       p.name.toLowerCase().includes(search.toLowerCase()) ||
       p.key.toLowerCase().includes(search.toLowerCase())
   );
-
   return (
     <PageContainer
       title="Projects"
@@ -32,8 +29,7 @@ export default function ProjectsPage() {
           <Plus className="h-3.5 w-3.5" />
           Create Project
         </Button>
-      ) : undefined}
-    >
+      ) : undefined}>
       <div className="mb-4">
         <div className="relative max-w-sm">
           <Search className="absolute left-2.5 top-2 h-4 w-4 text-muted-foreground" />

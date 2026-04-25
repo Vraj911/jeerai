@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { automationApi } from '@/api/automation.api';
 import type { AutomationRule } from '@/types/automation';
-
 export function useAutomationRules(projectId: string) {
   return useQuery({
     queryKey: ['automation', projectId],
@@ -9,7 +8,6 @@ export function useAutomationRules(projectId: string) {
     enabled: !!projectId,
   });
 }
-
 export function useCreateAutomationRule() {
   const qc = useQueryClient();
   return useMutation({
@@ -19,7 +17,6 @@ export function useCreateAutomationRule() {
     },
   });
 }
-
 export function useUpdateAutomationRule() {
   const qc = useQueryClient();
   return useMutation({
@@ -30,7 +27,6 @@ export function useUpdateAutomationRule() {
     },
   });
 }
-
 export function useDeleteAutomationRule() {
   const qc = useQueryClient();
   return useMutation({
@@ -40,7 +36,6 @@ export function useDeleteAutomationRule() {
     },
   });
 }
-
 export function useToggleAutomationRule() {
   const qc = useQueryClient();
   return useMutation({

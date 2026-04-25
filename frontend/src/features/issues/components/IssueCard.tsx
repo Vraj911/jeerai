@@ -35,7 +35,6 @@ import {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PRIORITY_LABELS, STATUS_LABELS } from '@/lib/constants';
-
 interface IssueCardProps {
   issue: Issue;
   onClick?: () => void;
@@ -51,7 +50,6 @@ interface IssueCardProps {
   onSetPriority?: (priority: IssuePriority) => void;
   onCopyIssueLink?: () => void;
 }
-
 const priorityIcons: Record<string, ComponentType<{ className?: string }>> = {
   highest: ChevronsUp,
   high: ArrowUp,
@@ -59,7 +57,6 @@ const priorityIcons: Record<string, ComponentType<{ className?: string }>> = {
   low: ArrowDown,
   lowest: ChevronsDown,
 };
-
 const priorityColorClasses: Record<string, string> = {
   highest: 'text-priority-highest',
   high: 'text-priority-high',
@@ -67,7 +64,6 @@ const priorityColorClasses: Record<string, string> = {
   low: 'text-priority-low',
   lowest: 'text-priority-lowest',
 };
-
 function getIssueTypeIcon(issue: Issue): ComponentType<{ className?: string }> {
   const labels = issue.labels.join(' ').toLowerCase();
   const title = issue.title.toLowerCase();
@@ -79,7 +75,6 @@ function getIssueTypeIcon(issue: Issue): ComponentType<{ className?: string }> {
   }
   return CheckSquare;
 }
-
 function renderHighlightedTitle(title: string, query?: string) {
   if (!query?.trim()) {
     return title;
@@ -90,11 +85,9 @@ function renderHighlightedTitle(title: string, query?: string) {
   if (matchIndex < 0) {
     return title;
   }
-
   const before = title.slice(0, matchIndex);
   const match = title.slice(matchIndex, matchIndex + lowerQuery.length);
   const after = title.slice(matchIndex + lowerQuery.length);
-
   return (
     <>
       {before}
@@ -103,7 +96,6 @@ function renderHighlightedTitle(title: string, query?: string) {
     </>
   );
 }
-
 export const IssueCard = memo(function IssueCard({
   issue,
   onClick,
@@ -121,7 +113,6 @@ export const IssueCard = memo(function IssueCard({
 }: IssueCardProps) {
   const PriorityIcon = priorityIcons[issue.priority];
   const TypeIcon = useMemo(() => getIssueTypeIcon(issue), [issue]);
-
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -141,8 +132,7 @@ export const IssueCard = memo(function IssueCard({
               event.preventDefault();
               onClick?.();
             }
-          }}
-        >
+          }}>
           <div className="flex items-start gap-2">
             <Checkbox
               checked={selected}
@@ -160,8 +150,7 @@ export const IssueCard = memo(function IssueCard({
                 <button
                   className="h-6 w-6 shrink-0 rounded-md flex items-center justify-center text-muted-foreground opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-accent"
                   aria-label="Issue actions"
-                  onClick={(event) => event.stopPropagation()}
-                >
+                  onClick={(event) => event.stopPropagation()}>
                   <MoreHorizontal className="h-4 w-4" />
                 </button>
               </DropdownMenuTrigger>

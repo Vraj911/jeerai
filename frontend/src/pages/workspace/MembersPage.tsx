@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +24,6 @@ import { useCreateInvitation, useInvitations } from '@/queries/invitation.querie
 import { useWorkspaceMembers } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
 import type { WorkspaceRole } from '@/types/workspace';
-
 export default function MembersPage() {
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
@@ -36,11 +34,9 @@ export default function MembersPage() {
   const { data: invitations = [] } = useInvitations(currentWorkspace?.id);
   const createInvitation = useCreateInvitation();
   const canInvite = currentRole === 'OWNER' || currentRole === 'ADMIN';
-
   const handleInvite = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!currentWorkspace || !currentUser) return;
-
     await createInvitation.mutateAsync({
       workspaceId: currentWorkspace.id,
       actorUserId: currentUser.id,
@@ -50,7 +46,6 @@ export default function MembersPage() {
     setEmail('');
     setRole('MEMBER');
   };
-
   return (
     <PageContainer title="Members">
       {canInvite && currentWorkspace && currentUser && (
@@ -91,7 +86,6 @@ export default function MembersPage() {
           </form>
         </div>
       )}
-
       <div className="rounded-md border">
         <Table>
           <TableHeader>
@@ -121,7 +115,6 @@ export default function MembersPage() {
           </TableBody>
         </Table>
       </div>
-
       {canInvite && invitations.length > 0 && (
         <div className="mt-6 rounded-md border p-4">
           <h2 className="mb-3 text-sm font-semibold">Pending invitations</h2>

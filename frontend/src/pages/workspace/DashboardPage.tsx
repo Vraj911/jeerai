@@ -9,7 +9,6 @@ import { useActivities } from '@/queries/activity.queries';
 import { useSessionStore } from '@/store/session.store';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useWorkspaceDashboardAccess } from '@/queries/workspace.queries';
-
 export default function DashboardPage() {
   const navigate = useNavigate();
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -18,12 +17,10 @@ export default function DashboardPage() {
   const { data: issues = [] } = useIssues();
   const { data: activities = [] } = useActivities();
   const { data: dashboardAccess } = useWorkspaceDashboardAccess(currentWorkspace?.id);
-
   const assignedIssues = issues.filter(
     (i) => i.assignee?.id === currentUser?.id && i.status !== 'done'
   );
   const recentActivities = activities.slice(0, 5);
-
   if (!currentWorkspace) {
     return (
       <PageContainer title="Dashboard">
@@ -35,7 +32,6 @@ export default function DashboardPage() {
       </PageContainer>
     );
   }
-
   if (dashboardAccess && !dashboardAccess.accessible) {
     return (
       <PageContainer title="Dashboard">
@@ -47,7 +43,6 @@ export default function DashboardPage() {
       </PageContainer>
     );
   }
-
   return (
     <PageContainer title={`${currentWorkspace.name} Dashboard`}>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -58,8 +53,7 @@ export default function DashboardPage() {
               <div
                 key={project.id}
                 onClick={() => navigate(ROUTES.PROJECT.OVERVIEW(project.id))}
-                className="rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
-              >
+                className="rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors">
                 <div className="flex items-center gap-2">
                   <span className="font-mono text-xs text-muted-foreground">{project.key}</span>
                   <span className="text-sm font-medium">{project.name}</span>
@@ -69,7 +63,6 @@ export default function DashboardPage() {
             ))}
           </div>
         </div>
-
         <div>
           <h2 className="text-base font-medium mb-3">Assigned to You</h2>
           <div className="space-y-2">
@@ -77,8 +70,7 @@ export default function DashboardPage() {
               <div
                 key={issue.id}
                 onClick={() => navigate(ROUTES.ISSUE.DETAIL(issue.id))}
-                className="rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors"
-              >
+                className="rounded-md border p-3 hover:bg-accent/50 cursor-pointer transition-colors" >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-mono text-xs text-muted-foreground">{issue.key}</span>
                   <StatusIndicator status={issue.status} />
@@ -91,15 +83,13 @@ export default function DashboardPage() {
             )}
           </div>
         </div>
-
         <div className="lg:col-span-2">
           <h2 className="text-base font-medium mb-3">Recent Activity</h2>
           <div className="space-y-1">
             {recentActivities.map((activity) => (
               <div
                 key={activity.id}
-                className="flex items-start gap-3 py-2 border-b last:border-0"
-              >
+                className="flex items-start gap-3 py-2 border-b last:border-0">
                 <div className="h-6 w-6 rounded-md bg-muted flex items-center justify-center text-[10px] font-medium shrink-0 mt-0.5">
                   {activity.actor.name.charAt(0)}
                 </div>

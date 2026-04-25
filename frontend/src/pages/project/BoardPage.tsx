@@ -26,10 +26,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ChevronDown, MoreHorizontal } from 'lucide-react';
-
 const COLUMNS: IssueStatus[] = ['todo', 'in-progress', 'review', 'done'];
 const RECENT_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
-
 export default function BoardPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
@@ -38,7 +36,6 @@ export default function BoardPage() {
   const updateStatus = useUpdateIssueStatus();
   const updateIssue = useUpdateIssue();
   const { data: users = [] } = useUsers();
-
   const [dragOverColumn, setDragOverColumn] = useState<IssueStatus | null>(null);
   const [draggingIssueId, setDraggingIssueId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -56,14 +53,11 @@ export default function BoardPage() {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [createModalStatus, setCreateModalStatus] = useState<IssueStatus | null>(null);
-
   const { collapsedBoardColumns, toggleBoardColumnCollapsed } = useUIStore();
-
   const derivedIssues = useMemo(() => {
     const currentUserId = users[0]?.id ?? 'user-1';
     const now = Date.now();
     const query = debouncedSearch.trim().toLowerCase();
-
     return (issues ?? []).filter((issue) => {
       if (query && !issue.title.toLowerCase().includes(query) && !issue.key.toLowerCase().includes(query)) {
         return false;
@@ -83,23 +77,19 @@ export default function BoardPage() {
       return true;
     });
   }, [debouncedSearch, issues, quickFilters, users]);
-
   const handleDragStart = useCallback((e: React.DragEvent, issue: Issue) => {
     e.dataTransfer.setData('issueId', issue.id);
     e.dataTransfer.effectAllowed = 'move';
     setDraggingIssueId(issue.id);
   }, []);
-
   const handleDragOver = useCallback((e: React.DragEvent, status: IssueStatus) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
     setDragOverColumn(status);
   }, []);
-
   const handleDragLeave = useCallback(() => {
     setDragOverColumn(null);
   }, []);
-
   const handleDrop = useCallback(
     (e: React.DragEvent, status: IssueStatus) => {
       e.preventDefault();
@@ -112,11 +102,9 @@ export default function BoardPage() {
     },
     [updateStatus]
   );
-
   const updateIssueField = (issue: Issue, data: Partial<Issue>) => {
     updateIssue.mutate({ id: issue.id, data });
   };
-
   if (isLoading) {
     return (
       <PageContainer title="Board">
@@ -138,7 +126,6 @@ export default function BoardPage() {
       </PageContainer>
     );
   }
-
   return (
     <PageContainer title="Board">
       <BoardControlBar
@@ -153,12 +140,10 @@ export default function BoardPage() {
       />
       <div
         className="flex gap-4 overflow-x-auto pb-4"
-        style={{ minHeight: 'calc(100vh - 260px)' }}
-      >
+        style={{ minHeight: 'calc(100vh - 260px)' }}>
         {COLUMNS.map((status) => {
           const columnIssues = derivedIssues.filter((i) => i.status === status);
           const collapsed = Boolean(collapsedBoardColumns[status]);
-
           return (
             <div
               key={status}
@@ -169,15 +154,13 @@ export default function BoardPage() {
               )}
               onDragOver={(e) => handleDragOver(e, status)}
               onDragLeave={handleDragLeave}
-              onDrop={(e) => handleDrop(e, status)}
-            >
+              onDrop={(e) => handleDrop(e, status)} >
               <div className="flex items-center justify-between px-3 py-2 border-b">
                 {collapsed ? (
                   <button
                     onClick={() => toggleBoardColumnCollapsed(status)}
                     className="mx-auto text-[11px] tracking-wide text-muted-foreground rotate-180 [writing-mode:vertical-rl]"
-                    aria-label={`Expand ${STATUS_LABELS[status]} column`}
-                  >
+                    aria-label={`Expand ${STATUS_LABELS[status]} column`} >
                     {STATUS_LABELS[status]}
                   </button>
                 ) : (
@@ -215,7 +198,6 @@ export default function BoardPage() {
                   </>
                 )}
               </div>
-
               {!collapsed && (
                 <div className="flex-1 p-2 space-y-2 overflow-y-auto">
                   {dragOverColumn === status && (
@@ -227,8 +209,7 @@ export default function BoardPage() {
                       draggable
                       onDragStart={(e) => handleDragStart(e, issue)}
                       onDragEnd={() => setDraggingIssueId(null)}
-                      className="cursor-grab active:cursor-grabbing transition-transform duration-200"
-                    >
+                      className="cursor-grab active:cursor-grabbing transition-transform duration-200">
                       <IssueCard
                         issue={issue}
                         compact={viewSettings.compactCards}
@@ -262,11 +243,9 @@ export default function BoardPage() {
                       No issues
                     </div>
                   )}
-
                   <button
                     onClick={() => setCreateModalStatus(status)}
-                    className="w-full h-8 rounded-md border border-dashed text-xs text-muted-foreground hover:text-foreground hover:border-border/80 flex items-center justify-center gap-1 transition-colors"
-                  >
+                    className="w-full h-8 rounded-md border border-dashed text-xs text-muted-foreground hover:text-foreground hover:border-border/80 flex items-center justify-center gap-1 transition-colors">
                     <ChevronDown className="h-3.5 w-3.5 rotate-[-90deg]" />
                     + Create
                   </button>

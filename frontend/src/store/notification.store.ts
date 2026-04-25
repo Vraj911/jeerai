@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AppNotification } from '@/types/notification';
-
 interface NotificationState {
   notifications: AppNotification[];
   readNotificationIds: string[];
@@ -10,7 +9,6 @@ interface NotificationState {
   markAllRead: () => void;
   pushNotification: (notification: AppNotification) => void;
 }
-
 export const useNotificationStore = create<NotificationState>()(
   persist(
     (set, get) => ({

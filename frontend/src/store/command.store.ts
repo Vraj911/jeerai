@@ -1,5 +1,4 @@
 import { create } from 'zustand';
-
 interface CommandState {
   open: boolean;
   query: string;
@@ -7,7 +6,6 @@ interface CommandState {
   setQuery: (query: string) => void;
   toggle: () => void;
 }
-
 export const useCommandStore = create<CommandState>((set) => ({
   open: false,
   query: '',

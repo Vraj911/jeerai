@@ -4,7 +4,6 @@ import { RouterProvider } from '@/app/providers/RouterProvider';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from '@/components/ui/toaster';
 import { NotificationBootstrap } from '@/components/system/NotificationBootstrap';
-
 const App = () => (
   <ThemeProvider>
     <QueryProvider>
@@ -16,5 +15,4 @@ const App = () => (
     </QueryProvider>
   </ThemeProvider>
 );
-
 export default App;

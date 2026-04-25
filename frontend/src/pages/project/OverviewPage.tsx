@@ -6,29 +6,24 @@ import { format } from 'date-fns';
 import { useProject } from '@/queries/project.queries';
 import { useIssues } from '@/queries/issue.queries';
 import { useProjectActivities } from '@/queries/activity.queries';
-
 export default function OverviewPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project } = useProject(projectId ?? '');
   const { data: projectIssues = [] } = useIssues(projectId);
   const { data: activityList = [] } = useProjectActivities(projectId ?? '');
   const activities = activityList.slice(0, 5);
-
   if (!project) {
     return <PageContainer title="Project not found"><p className="text-sm text-muted-foreground">This project does not exist.</p></PageContainer>;
   }
-
   const statusCounts = (['todo', 'in-progress', 'review', 'done'] as IssueStatus[]).map(
     (status) => ({
       status,
       count: projectIssues.filter((i) => i.status === status).length,
     })
   );
-
   return (
     <PageContainer>
       <p className="text-sm text-muted-foreground mb-6">{project.description}</p>
-
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {statusCounts.map(({ status, count }) => (
           <div key={status} className="rounded-md border p-3">
@@ -37,7 +32,6 @@ export default function OverviewPage() {
           </div>
         ))}
       </div>
-
       <div>
         <h2 className="text-base font-medium mb-3">Recent Activity</h2>
         <div className="space-y-1">

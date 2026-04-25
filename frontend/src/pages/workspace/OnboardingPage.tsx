@@ -9,12 +9,10 @@ import { useCreateWorkspace } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { userApi } from '@/api/user.api';
-
 function inferNameFromEmail(email?: string) {
   if (!email) return 'Workspace Owner';
   return email.split('@')[0].replace(/[._-]+/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
-
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -23,12 +21,10 @@ export default function OnboardingPage() {
   const [workspaceName, setWorkspaceName] = useState('');
   const [inviteToken, setInviteToken] = useState('');
   const createWorkspace = useCreateWorkspace();
-
   const ownerName = useMemo(
     () => currentUser?.name || inferNameFromEmail(currentUser?.email),
     [currentUser?.email, currentUser?.name]
   );
-
   if (!currentUser?.email) {
     return (
       <div className="min-h-screen bg-background px-6 py-10">
@@ -44,7 +40,6 @@ export default function OnboardingPage() {
       </div>
     );
   }
-
   const handleCreateWorkspace = async (event: FormEvent) => {
     event.preventDefault();
     const workspace = await createWorkspace.mutateAsync({
@@ -61,13 +56,11 @@ export default function OnboardingPage() {
     setCurrentWorkspace(workspace);
     navigate(ROUTES.APP.DASHBOARD);
   };
-
   const handleAcceptInvitation = () => {
     const trimmedToken = inviteToken.trim();
     if (!trimmedToken) return;
     navigate(ROUTES.INVITE(trimmedToken));
   };
-
   return (
     <div className="min-h-screen bg-background px-6 py-10">
       <div className="mx-auto grid max-w-5xl gap-6 lg:grid-cols-[1.1fr_0.9fr]">
@@ -96,7 +89,6 @@ export default function OnboardingPage() {
             </form>
           </CardContent>
         </Card>
-
         <Card className="border-border/80">
           <CardHeader>
             <CardTitle className="text-xl">Have an invitation?</CardTitle>
@@ -124,7 +116,6 @@ export default function OnboardingPage() {
           </CardContent>
         </Card>
       </div>
-
       <div className="mx-auto mt-8 max-w-5xl rounded-xl border bg-card p-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>

@@ -13,12 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
 export default function IssuesListPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { data: issues = [], isLoading } = useIssues(projectId);
-
   if (isLoading) {
     return (
       <PageContainer title="Issues">
@@ -31,7 +29,6 @@ export default function IssuesListPage() {
       </PageContainer>
     );
   }
-
   return (
     <PageContainer title="Issues">
       <div className="rounded-md border">
@@ -50,8 +47,7 @@ export default function IssuesListPage() {
               <TableRow
                 key={issue.id}
                 className="cursor-pointer"
-                onClick={() => navigate(ROUTES.ISSUE.DETAIL(issue.id))}
-              >
+                onClick={() => navigate(ROUTES.ISSUE.DETAIL(issue.id))} >
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {issue.key}
                 </TableCell>

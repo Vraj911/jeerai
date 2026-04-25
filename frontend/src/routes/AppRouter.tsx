@@ -6,7 +6,6 @@ import { AppLayout } from '@/layouts/AppLayout';
 import { ProjectLayout } from '@/layouts/ProjectLayout';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
-
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
 const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
@@ -28,7 +27,6 @@ const NotificationsPage = lazy(() => import('@/pages/system/NotificationsPage'))
 const ActivityPage = lazy(() => import('@/pages/system/ActivityPage'));
 const AIWorkspacePage = lazy(() => import('@/pages/system/AIWorkspacePage'));
 const NotFound = lazy(() => import('@/pages/NotFound'));
-
 function PageLoader() {
   return (
     <div className="space-y-4 p-6">
@@ -44,16 +42,13 @@ export function AppRouter() {
       <Routes>
         <Route element={<RootLayout />}>
           <Route path="/" element={<Navigate to="/auth/login" replace />} />
-
           <Route path="/auth" element={<AuthLayout />}>
             <Route path="login" element={<LoginPage />} />
             <Route path="signup" element={<SignupPage />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
           </Route>
-
           <Route path="/onboarding" element={<OnboardingPage />} />
           <Route path="/invite/:token" element={<InvitationPage />} />
-
           <Route element={<ProtectedRoute />}>
             <Route path="/app" element={<AppLayout />}>
               <Route path="dashboard" element={<DashboardPage />} />
@@ -64,7 +59,6 @@ export function AppRouter() {
               <Route path="ai" element={<AIWorkspacePage />} />
               <Route path="notifications" element={<NotificationsPage />} />
               <Route path="issues/:issueId" element={<IssueDetailPage />} />
-
               <Route path="projects/:projectId" element={<ProjectLayout />}>
                 <Route index element={<OverviewPage />} />
                 <Route path="board" element={<BoardPage />} />
@@ -76,7 +70,6 @@ export function AppRouter() {
               </Route>
             </Route>
           </Route>
-
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

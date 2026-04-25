@@ -3,7 +3,6 @@ interface PageContainerProps {
   actions?: React.ReactNode;
   children: React.ReactNode;
 }
-
 export function PageContainer({ title, actions, children }: PageContainerProps) {
   return (
     <div className="p-6 page-enter">

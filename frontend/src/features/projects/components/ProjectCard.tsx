@@ -1,10 +1,8 @@
 import type { Project } from '@/types/project';
-
 interface ProjectCardProps {
   project: Project;
   onClick: () => void;
 }
-
 export function ProjectCard({ project, onClick }: ProjectCardProps) {
   return (
     <div

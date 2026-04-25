@@ -12,12 +12,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateProject } from '@/queries/project.queries';
 import { useSessionStore } from '@/store/session.store';
-
 interface ProjectCreateModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
-
 export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalProps) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
@@ -26,30 +24,25 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
   const { toast } = useToast();
   const createProject = useCreateProject();
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
-
   const generateKey = (val: string) =>
     val.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 4);
-
   const handleNameChange = (value: string) => {
     setName(value);
     if (!key || key === generateKey(name)) {
       setKey(generateKey(value));
     }
   };
-
   const reset = () => {
     setStep(1);
     setName('');
     setKey('');
     setDescription('');
   };
-
   const handleSubmit = async () => {
     if (!currentWorkspace?.id) {
       toast({ title: 'Workspace missing', description: 'Select a workspace before creating a project.', variant: 'destructive' });
       return;
     }
-
     try {
       await createProject.mutateAsync({
         name: name.trim(),
@@ -65,7 +58,6 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
       toast({ title: 'Project creation failed', description: message, variant: 'destructive' });
     }
   };
-
   return (
     <Dialog open={open} onOpenChange={(v) => { onOpenChange(v); if (!v) reset(); }}>
       <DialogContent className="sm:max-w-md">

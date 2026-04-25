@@ -6,7 +6,6 @@ import { Send, Bot, User as UserIcon, Check, X } from 'lucide-react';
 import type { AIMessage } from '@/types/ai';
 import { useToast } from '@/hooks/use-toast';
 import { useIssues } from '@/queries/issue.queries';
-
 const SECTIONS = [
   {
     id: 'generate',
@@ -27,7 +26,6 @@ const SECTIONS = [
     placeholder: 'What should we work on next?',
   },
 ] as const;
-
 function getAIResponse(
   input: string,
   sectionId: string,
@@ -50,7 +48,6 @@ function getAIResponse(
   }
   return 'I can help you with issue drafts, project summaries, or priority suggestions. What would you like to know?';
 }
-
 function streamText(text: string, onChunk: (chunk: string) => void): Promise<void> {
   const sentences = text.split(/(?<=[.!?]\s)/).filter(Boolean);
   let i = 0;
@@ -67,7 +64,6 @@ function streamText(text: string, onChunk: (chunk: string) => void): Promise<voi
     next();
   });
 }
-
 export default function AIWorkspacePage() {
   const { data: issues = [] } = useIssues();
   const [messages, setMessages] = useState<AIMessage[]>([]);
@@ -77,15 +73,12 @@ export default function AIWorkspacePage() {
   const [pendingAction, setPendingAction] = useState<{ type: string; data?: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
-
   const handleSend = (sectionId?: string) => {
     const prompt = (input.trim() || SECTIONS.find((s) => s.id === sectionId)?.prompt) ?? '';
     if (!prompt && !sectionId) return;
-
     const userMsg: AIMessage = {
       id: `msg-${Date.now()}`,
       role: 'user',
@@ -95,10 +88,8 @@ export default function AIWorkspacePage() {
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
     setStreaming(true);
-
     const fullResponse = getAIResponse(prompt, sectionId ?? 'generate', issues);
     let streamedContent = '';
-
     streamText(fullResponse, (chunk) => {
       streamedContent += chunk;
       setMessages((prev) => {
@@ -115,19 +106,16 @@ export default function AIWorkspacePage() {
       }
     });
   };
-
   const handleConfirm = () => {
     if (pendingAction?.type === 'create_issue') {
       toast({ title: 'Issue created', description: 'The suggested issue has been added. (Simulated)' });
       setPendingAction(null);
     }
   };
-
   const handleReject = () => {
     setPendingAction(null);
     toast({ title: 'Action cancelled', description: 'No changes were made.' });
   };
-
   return (
     <PageContainer title="AI Workspace">
       <div className="max-w-2xl mx-auto flex flex-col" style={{ height: 'calc(100vh - 180px)' }}>
@@ -142,13 +130,11 @@ export default function AIWorkspacePage() {
               }}
               className={`rounded-md border p-3 text-left text-sm transition-colors ${
                 activeSection === s.id ? 'border-primary bg-primary/5' : 'hover:bg-accent/50'
-              }`}
-            >
+              }`} >
               <span className="font-medium">{s.title}</span>
             </button>
           ))}
         </div>
-
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 mb-4 min-h-[200px]">
           {messages.length === 0 && (
             <div className="text-sm text-muted-foreground py-8 text-center">
@@ -168,7 +154,6 @@ export default function AIWorkspacePage() {
             </div>
           ))}
         </div>
-
         {pendingAction && (
           <div className="flex gap-2 mb-4 p-3 rounded-md border bg-muted/30">
             <Button size="sm" onClick={handleConfirm}>
@@ -182,7 +167,6 @@ export default function AIWorkspacePage() {
             <span className="text-xs text-muted-foreground self-center ml-2">User approval required</span>
           </div>
         )}
-
         <div className="flex gap-2 border-t pt-4">
           <Input
             value={input}

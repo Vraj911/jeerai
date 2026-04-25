@@ -8,7 +8,6 @@ import { workspaceApi } from '@/api/workspace.api';
 import { authApi } from '@/api/auth.api';
 import { getApiErrorMessage } from '@/api/apiError';
 import { useSessionStore } from '@/store/session.store';
-
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -18,35 +17,29 @@ export default function LoginPage() {
   const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
   const setCurrentRole = useSessionStore((state) => state.setCurrentRole);
   const setToken = useSessionStore((state) => state.setToken);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
-
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setError('Email is required.');
       return;
     }
-
     if (!password) {
       setError('Password is required.');
       return;
     }
-
     try {
       const auth = await authApi.login({ email: normalizedEmail, password });
       setToken(auth.token);
       setCurrentUser(auth.user);
       const workspaces = await workspaceApi.getAll(auth.user.id);
-
       if (workspaces.length === 0) {
         setCurrentWorkspace(null);
         setCurrentRole(null);
         navigate(ROUTES.ONBOARDING);
         return;
       }
-
       setCurrentWorkspace(workspaces[0]);
       setCurrentRole(null);
       navigate(ROUTES.APP.DASHBOARD);
@@ -54,7 +47,6 @@ export default function LoginPage() {
       setError(getApiErrorMessage(err, 'Login failed'));
     }
   };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-center text-lg font-semibold">Sign in</h2>

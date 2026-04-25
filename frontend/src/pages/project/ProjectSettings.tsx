@@ -15,16 +15,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useSessionStore } from '@/store/session.store';
-
 const ROLES = ['Admin', 'Member', 'Viewer'] as const;
 const PERMISSIONS = ['Create issues', 'Edit issues', 'Delete issues', 'Manage project', 'View analytics'] as const;
-
 const MOCK_INTEGRATIONS = [
   { id: 'github', name: 'GitHub', description: 'Link commits and pull requests' },
   { id: 'slack', name: 'Slack', description: 'Get notifications in channels' },
   { id: 'email', name: 'Email', description: 'Email notifications for updates' },
 ];
-
 export default function ProjectSettings() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project, isLoading } = useProject(projectId ?? '');
@@ -40,14 +37,12 @@ export default function ProjectSettings() {
     slack: false,
     email: false,
   });
-
   useEffect(() => {
     if (project) {
       setName(project.name);
       setDescription(project.description);
     }
   }, [project]);
-
   if (isLoading || !project) {
     return (
       <PageContainer title="Settings">
@@ -55,11 +50,9 @@ export default function ProjectSettings() {
       </PageContainer>
     );
   }
-
   const projectName = name || project.name;
   const projectDesc = description !== '' ? description : project.description;
   const members = project.members;
-
   const handleSaveGeneral = () => {
     updateProject.mutate(
       { id: project.id, data: { name: projectName, description: projectDesc } },
@@ -70,7 +63,6 @@ export default function ProjectSettings() {
       }
     );
   };
-
   const handlePermissionChange = (role: string, perm: string, checked: boolean) => {
     setPermissionMatrix((prev) => ({
       ...prev,
@@ -78,7 +70,6 @@ export default function ProjectSettings() {
     }));
     toast({ title: 'Permissions updated', description: 'Permission matrix has been updated.' });
   };
-
   const handleIntegrationToggle = (id: string, enabled: boolean) => {
     setIntegrations((prev) => ({ ...prev, [id]: enabled }));
     toast({
@@ -86,7 +77,6 @@ export default function ProjectSettings() {
       description: `${MOCK_INTEGRATIONS.find((i) => i.id === id)?.name} has been ${enabled ? 'enabled' : 'disabled'}.`,
     });
   };
-
   return (
     <PageContainer title="Settings">
       <Tabs defaultValue="general" className="max-w-2xl">
@@ -205,8 +195,7 @@ export default function ProjectSettings() {
           {MOCK_INTEGRATIONS.map((int) => (
             <div
               key={int.id}
-              className="flex items-center justify-between rounded-md border p-4"
-            >
+              className="flex items-center justify-between rounded-md border p-4" >
               <div>
                 <p className="font-medium text-sm">{int.name}</p>
                 <p className="text-xs text-muted-foreground">{int.description}</p>

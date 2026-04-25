@@ -6,7 +6,6 @@ import { Settings, Share2 } from 'lucide-react';
 import { ROUTES } from '@/routes/routeConstants';
 import { useProject } from '@/queries/project.queries';
 import { useToast } from '@/hooks/use-toast';
-
 const projectTabs = [
   { label: 'Overview', path: '' },
   { label: 'Board', path: '/board' },
@@ -15,18 +14,15 @@ const projectTabs = [
   { label: 'Analytics', path: '/analytics' },
   { label: 'Automation', path: '/automation' },
 ];
-
 export function ProjectLayout() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project } = useProject(projectId ?? '');
   const { toast } = useToast();
   const basePath = `/app/projects/${projectId}`;
-
   const handleShare = async () => {
     if (!projectId) {
       return;
     }
-
     const shareUrl = `${window.location.origin}${basePath}`;
     try {
       if (navigator.share) {
@@ -45,7 +41,6 @@ export function ProjectLayout() {
       }
     }
   };
-
   return (
     <div className="flex flex-col h-full">
       <div className="border-b bg-gradient-to-b from-muted/70 to-background">
@@ -79,8 +74,7 @@ export function ProjectLayout() {
               variant="outline"
               size="sm"
               className="h-7 text-xs"
-              asChild
-            >
+              asChild>
               <NavLink to={ROUTES.PROJECT.SETTINGS(projectId ?? '')}>
                 <Settings className="h-3.5 w-3.5 mr-1" />
                 Settings
@@ -106,8 +100,7 @@ export function ProjectLayout() {
                   ? 'border-primary text-foreground font-medium'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               )
-            }
-          >
+            }>
             {tab.label}
           </NavLink>
         ))}

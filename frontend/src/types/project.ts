@@ -1,5 +1,4 @@
 import type { User } from './user';
-
 export interface Project {
   id: string;
   key: string;
@@ -10,7 +9,6 @@ export interface Project {
   createdAt: string;
   updatedAt: string;
 }
-
 export interface Sprint {
   id: string;
   name: string;

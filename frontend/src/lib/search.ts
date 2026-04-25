@@ -2,11 +2,9 @@ export function fuzzyScore(query: string, target: string): number {
   const q = query.trim().toLowerCase();
   const t = target.toLowerCase();
   if (!q) return 0;
-
   if (t.includes(q)) {
     return 1000 - t.indexOf(q);
   }
-
   let ti = 0;
   let score = 0;
   for (let qi = 0; qi < q.length; qi += 1) {
@@ -20,7 +18,6 @@ export function fuzzyScore(query: string, target: string): number {
   }
   return score;
 }
-
 export function fuzzyMatch<T>(
   query: string,
   items: T[],
@@ -34,7 +31,6 @@ export function fuzzyMatch<T>(
     .sort((a, b) => b.score - a.score)
     .map((entry) => entry.item);
 }
-
 export function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

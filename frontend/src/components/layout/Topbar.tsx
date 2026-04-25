@@ -22,12 +22,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
 type SearchEntity =
   | { id: string; label: string; value: string; route: string; group: 'Issues'; meta: string }
   | { id: string; label: string; value: string; route: string; group: 'Projects'; meta: string }
   | { id: string; label: string; value: string; route: string; group: 'Members'; meta: string };
-
 export function Topbar() {
   const { globalSearchOpen, setGlobalSearchOpen } = useUIStore();
   const { setOpen: setCommandOpen } = useCommandStore();
@@ -39,13 +37,11 @@ export function Topbar() {
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
   const { data: users = [] } = useUsers();
-
   const [searchQuery, setSearchQuery] = useState('');
   const [activeIndex, setActiveIndex] = useState(0);
   const debouncedQuery = useDebounce(searchQuery, 200);
   const searchRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
   useEffect(() => {
     const openListener = () => {
       setGlobalSearchOpen(true);
@@ -54,7 +50,6 @@ export function Topbar() {
     window.addEventListener('jeera:focus-global-search', openListener);
     return () => window.removeEventListener('jeera:focus-global-search', openListener);
   }, [setGlobalSearchOpen]);
-
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -64,7 +59,6 @@ export function Topbar() {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, [setGlobalSearchOpen]);
-
   const issueItems = useMemo(
     () =>
       fuzzyMatch(
@@ -81,7 +75,6 @@ export function Topbar() {
       ).slice(0, 5),
     [debouncedQuery, issues]
   );
-
   const projectItems = useMemo(
     () =>
       fuzzyMatch(
@@ -98,7 +91,6 @@ export function Topbar() {
       ).slice(0, 4),
     [debouncedQuery, projects]
   );
-
   const memberItems = useMemo(
     () =>
       fuzzyMatch(
@@ -115,42 +107,35 @@ export function Topbar() {
       ).slice(0, 4),
     [debouncedQuery, users]
   );
-
-  const groupedResults = useMemo(
+  const groupedResults = useMemo<Array<{ group: SearchEntity['group']; items: SearchEntity[] }>>(
     () => [
-      { group: 'Issues' as const, items: issueItems },
-      { group: 'Projects' as const, items: projectItems },
-      { group: 'Members' as const, items: memberItems },
+      { group: 'Issues', items: issueItems as SearchEntity[] },
+      { group: 'Projects', items: projectItems as SearchEntity[] },
+      { group: 'Members', items: memberItems as SearchEntity[] },
     ],
     [issueItems, memberItems, projectItems]
   );
-
-  const flatResults = useMemo(
+  const flatResults = useMemo<SearchEntity[]>(
     () => groupedResults.flatMap((entry) => entry.items),
     [groupedResults]
   );
-
   useEffect(() => {
     setActiveIndex(0);
   }, [debouncedQuery, globalSearchOpen]);
-
   const handleSearchSelect = (item: SearchEntity) => {
     navigate(item.route);
     setGlobalSearchOpen(false);
     setSearchQuery('');
   };
-
   const handleLogout = () => {
     clearSession();
     setGlobalSearchOpen(false);
     setSearchQuery('');
     navigate(ROUTES.AUTH.LOGIN, { replace: true });
   };
-
   return (
     <header className="flex h-12 items-center border-b px-4 gap-2 shrink-0 bg-background/90">
       <div className="flex-1" />
-
       <div ref={searchRef} className="relative" role="combobox" aria-expanded={globalSearchOpen} aria-haspopup="listbox">
         <button
           onClick={() => {
@@ -161,8 +146,7 @@ export function Topbar() {
             'flex items-center gap-2 rounded-md border px-3 py-1 text-sm text-muted-foreground hover:bg-accent transition-[background-color,border-color,filter] duration-200 hover:border-border/80 hover:brightness-[0.99]',
             globalSearchOpen && 'bg-accent'
           )}
-          aria-label="Open global search"
-        >
+          aria-label="Open global search" >
           <Search className="h-3.5 w-3.5" />
           {!globalSearchOpen && (
             <>
@@ -171,7 +155,6 @@ export function Topbar() {
             </>
           )}
         </button>
-
         {globalSearchOpen && (
           <div className="absolute top-full right-0 mt-1 w-96 rounded-md border bg-popover z-50">
             <div className="p-2 border-b">
@@ -246,7 +229,6 @@ export function Topbar() {
           </div>
         )}
       </div>
-
       <button
         onClick={() => setCommandOpen(true)}
         className="p-1.5 rounded-md hover:bg-accent text-muted-foreground"
@@ -259,13 +241,11 @@ export function Topbar() {
       <button onClick={toggleTheme} className="p-1.5 rounded-md hover:bg-accent text-muted-foreground" aria-label="Toggle theme">
         {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
       </button>
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
             className="ml-1 flex items-center gap-2 rounded-md border px-2 py-1 hover:bg-accent"
-            aria-label="Open account menu"
-          >
+            aria-label="Open account menu">
             <Avatar className="h-7 w-7">
               <AvatarFallback className="text-xs">
                 {currentUser?.name?.charAt(0)?.toUpperCase() ?? 'U'}

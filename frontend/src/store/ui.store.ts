@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-
 interface UIState {
   sidebarCollapsed: boolean;
   toggleSidebar: () => void;
@@ -17,7 +16,6 @@ interface UIState {
   activityPulse: boolean;
   setActivityPulse: (active: boolean) => void;
 }
-
 export const useUIStore = create<UIState>()(
   persist(
     (set) => ({

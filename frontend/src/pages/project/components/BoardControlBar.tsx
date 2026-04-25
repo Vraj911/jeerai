@@ -10,19 +10,16 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-
 export interface QuickFiltersState {
   myIssues: boolean;
   recentlyUpdated: boolean;
   highPriority: boolean;
 }
-
 export interface BoardViewSettings {
   compactCards: boolean;
   showAssignee: boolean;
   showPriority: boolean;
 }
-
 interface BoardControlBarProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -33,7 +30,6 @@ interface BoardControlBarProps {
   viewSettings: BoardViewSettings;
   onViewSettingsChange: (next: BoardViewSettings) => void;
 }
-
 export function BoardControlBar({
   search,
   onSearchChange,
@@ -56,7 +52,6 @@ export function BoardControlBar({
           aria-label="Board search"
         />
       </div>
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -71,29 +66,25 @@ export function BoardControlBar({
             checked={quickFilters.myIssues}
             onCheckedChange={(checked) =>
               onQuickFiltersChange({ ...quickFilters, myIssues: Boolean(checked) })
-            }
-          >
+            } >
             My Issues
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={quickFilters.recentlyUpdated}
             onCheckedChange={(checked) =>
               onQuickFiltersChange({ ...quickFilters, recentlyUpdated: Boolean(checked) })
-            }
-          >
+            } >
             Recently Updated
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={quickFilters.highPriority}
             onCheckedChange={(checked) =>
               onQuickFiltersChange({ ...quickFilters, highPriority: Boolean(checked) })
-            }
-          >
+            } >
             High Priority
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>
       </DropdownMenu>
-
       <div className="flex items-center gap-1">
         <Group className="h-3.5 w-3.5 text-muted-foreground" />
         <Select value={groupBy} onValueChange={(value: 'none' | 'assignee' | 'priority') => onGroupByChange(value)}>
@@ -107,7 +98,6 @@ export function BoardControlBar({
           </SelectContent>
         </Select>
       </div>
-
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="outline" size="sm" className="h-8 gap-1">
@@ -123,24 +113,21 @@ export function BoardControlBar({
             checked={viewSettings.compactCards}
             onCheckedChange={(checked) =>
               onViewSettingsChange({ ...viewSettings, compactCards: Boolean(checked) })
-            }
-          >
+            }>
             Compact cards
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={viewSettings.showAssignee}
             onCheckedChange={(checked) =>
               onViewSettingsChange({ ...viewSettings, showAssignee: Boolean(checked) })
-            }
-          >
+            }>
             Show assignee
           </DropdownMenuCheckboxItem>
           <DropdownMenuCheckboxItem
             checked={viewSettings.showPriority}
             onCheckedChange={(checked) =>
               onViewSettingsChange({ ...viewSettings, showPriority: Boolean(checked) })
-            }
-          >
+            }>
             Show priority
           </DropdownMenuCheckboxItem>
         </DropdownMenuContent>

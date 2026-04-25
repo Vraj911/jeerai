@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { notificationApi } from '@/api/notification.api';
 import { useSessionStore } from '@/store/session.store';
-
 export function useNotifications() {
   const token = useSessionStore((s) => s.token);
   return useQuery({
@@ -10,7 +9,6 @@ export function useNotifications() {
     enabled: Boolean(token),
   });
 }
-
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -20,7 +18,6 @@ export function useMarkNotificationRead() {
     },
   });
 }
-
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({

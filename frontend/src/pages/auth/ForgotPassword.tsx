@@ -4,16 +4,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/routes/routeConstants';
-
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setSent(true);
   };
-
   if (sent) {
     return (
       <div className="text-center space-y-4">
@@ -25,7 +22,6 @@ export default function ForgotPassword() {
       </div>
     );
   }
-
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-lg font-semibold text-center">Reset password</h2>

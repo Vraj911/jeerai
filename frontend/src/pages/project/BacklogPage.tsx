@@ -6,12 +6,10 @@ import { ROUTES } from '@/routes/routeConstants';
 import { StatusIndicator } from '@/components/shared/StatusIndicator';
 import type { Issue } from '@/types/issue';
 import { Skeleton } from '@/components/ui/skeleton';
-
 export default function BacklogPage() {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const { data: issues = [], isLoading } = useIssues(projectId);
-
   const backlogIssues = useMemo(
     () => issues.filter((issue) => issue.status !== 'done'),
     [issues]
@@ -20,7 +18,6 @@ export default function BacklogPage() {
     () => issues.filter((issue) => issue.status === 'done'),
     [issues]
   );
-
   if (isLoading) {
     return (
       <PageContainer title="Backlog">
@@ -28,7 +25,6 @@ export default function BacklogPage() {
       </PageContainer>
     );
   }
-
   return (
     <PageContainer title="Backlog">
       <div className="grid gap-6 lg:grid-cols-2">
@@ -46,7 +42,6 @@ export default function BacklogPage() {
     </PageContainer>
   );
 }
-
 function BacklogColumn({
   title,
   issues,
@@ -72,8 +67,7 @@ function BacklogColumn({
           <button
             key={issue.id}
             onClick={() => onIssueClick(issue.id)}
-            className="flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left hover:bg-accent/40"
-          >
+            className="flex w-full items-center gap-3 rounded-md border px-3 py-3 text-left hover:bg-accent/40">
             <StatusIndicator status={issue.status} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium">{issue.title}</div>
