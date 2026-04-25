@@ -1,10 +1,7 @@
 package com.jeerai.backend.service;
-
 import java.time.Instant;
 import java.util.List;
-
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.dto.ActivityFromIssueUpdateRequest;
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.model.Issue;
@@ -13,16 +10,13 @@ import com.jeerai.backend.repository.ActivityRepository;
 import com.jeerai.backend.repository.IssueRepository;
 import com.jeerai.backend.repository.UserRepository;
 import com.jeerai.backend.security.CurrentUserProvider;
-
 @Service
 public class ActivityService {
-
     private final ActivityRepository activityRepository;
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
     private final WorkspaceAccessService workspaceAccessService;
     private final CurrentUserProvider currentUserProvider;
-
     public ActivityService(
             ActivityRepository activityRepository,
             IssueRepository issueRepository,
@@ -35,7 +29,6 @@ public class ActivityService {
         this.workspaceAccessService = workspaceAccessService;
         this.currentUserProvider = currentUserProvider;
     }
-
     public List<Activity> getAll() {
         return activityRepository.findAll().stream()
                 .filter(activity -> activity.getProjectId() != null)
@@ -48,13 +41,11 @@ public class ActivityService {
                     }
                 })
                 .toList();
-    }
-
+            }
     public List<Activity> getByProject(String projectId) {
         workspaceAccessService.requireProjectReadAccess(projectId);
         return activityRepository.findByProjectId(projectId);
     }
-
     public Activity add(Activity activity) {
         workspaceAccessService.requireProjectIssueWriteAccess(activity.getProjectId());
         User actor = userRepository.findById(currentUserProvider.getCurrentUserId())
@@ -66,21 +57,17 @@ public class ActivityService {
         }
         return activityRepository.save(activity);
     }
-
     public Activity addFromIssueUpdate(ActivityFromIssueUpdateRequest request) {
         Issue issue = issueRepository.findById(request.getIssueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
         workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
-
         List<User> users = userRepository.findAll();
         if (users.isEmpty()) {
             throw new ResourceNotFoundException("No users found");
         }
-
         double randomValue = request.getRandomValue() == null ? Math.random() : request.getRandomValue();
         int actorIdx = Math.floorMod((int) Math.floor(randomValue * users.size()), users.size());
         User actor = users.get(actorIdx);
-
         String type;
         String detail;
         double bucket = randomValue % 1;
@@ -94,7 +81,6 @@ public class ActivityService {
             type = "commented";
             detail = "Commented on " + issue.getKey();
         }
-
         Activity activity = new Activity(
                 "act-" + System.currentTimeMillis(),
                 type,
@@ -105,7 +91,6 @@ public class ActivityService {
                 detail,
                 Instant.now(),
                 issue.getProjectId());
-
         return activityRepository.save(activity);
     }
 }

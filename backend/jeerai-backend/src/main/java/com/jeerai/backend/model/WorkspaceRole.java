@@ -1,5 +1,4 @@
 package com.jeerai.backend.model;
-
 public enum WorkspaceRole {
     OWNER,
     ADMIN,

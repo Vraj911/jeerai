@@ -1,16 +1,13 @@
 package com.jeerai.backend.config;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.List;
-
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.WorkspaceRole;
@@ -24,12 +21,9 @@ import com.jeerai.backend.repository.SprintRepository;
 import com.jeerai.backend.repository.UserRepository;
 import com.jeerai.backend.repository.WorkspaceMemberRepository;
 import com.jeerai.backend.repository.WorkspaceRepository;
-
 @Component
 public class MockDataInitializer implements ApplicationRunner {
-
     private static final String DEFAULT_SEEDED_PASSWORD = "password";
-
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final SprintRepository sprintRepository;
@@ -42,7 +36,6 @@ public class MockDataInitializer implements ApplicationRunner {
     private final InvitationRepository invitationRepository;
     private final ObjectMapper objectMapper;
     private final PasswordEncoder passwordEncoder;
-
     public MockDataInitializer(
             ProjectRepository projectRepository,
             UserRepository userRepository,
@@ -69,7 +62,6 @@ public class MockDataInitializer implements ApplicationRunner {
         this.objectMapper = objectMapper;
         this.passwordEncoder = passwordEncoder;
     }
-
     @Override
     public void run(ApplicationArguments args) {
         if (!userRepository.findAll().isEmpty()) {
@@ -84,9 +76,7 @@ public class MockDataInitializer implements ApplicationRunner {
                     });
             return;
         }
-
         MockDataPayload payload = loadPayload();
-
         safe(payload.getUsers()).forEach(user -> {
             if (user.getPasswordHash() == null || user.getPasswordHash().isBlank()) {
                 user.setPasswordHash(passwordEncoder.encode(DEFAULT_SEEDED_PASSWORD));
@@ -96,11 +86,9 @@ public class MockDataInitializer implements ApplicationRunner {
             }
             userRepository.save(user);
         });
-
         for (Project project : safe(payload.getProjects())) {
             projectRepository.save(project);
         }
-
         safe(payload.getSprints()).forEach(sprintRepository::save);
         safe(payload.getIssues()).forEach(issueRepository::save);
         safe(payload.getComments()).forEach(issueRepository::saveComment);
@@ -109,7 +97,6 @@ public class MockDataInitializer implements ApplicationRunner {
         safe(payload.getAutomationRules()).forEach(automationRuleRepository::save);
         seedDefaultWorkspaceIfNeeded();
     }
-
     private MockDataPayload loadPayload() {
         ClassPathResource resource = new ClassPathResource("mock/mock-data.json");
         try (InputStream input = resource.getInputStream()) {
@@ -118,21 +105,17 @@ public class MockDataInitializer implements ApplicationRunner {
             throw new IllegalStateException("Failed to load mock data from mock/mock-data.json", ex);
         }
     }
-
     private <T> List<T> safe(List<T> items) {
         return items == null ? Collections.emptyList() : items;
     }
-
     private void seedDefaultWorkspaceIfNeeded() {
         if (!workspaceRepository.findAll().isEmpty()) {
             return;
         }
-
         List<com.jeerai.backend.model.User> users = userRepository.findAll();
         if (users.isEmpty()) {
             return;
         }
-
         com.jeerai.backend.model.User owner = users.get(0);
         com.jeerai.backend.model.Workspace workspace = workspaceRepository.save(
                 new com.jeerai.backend.model.Workspace(
@@ -140,14 +123,12 @@ public class MockDataInitializer implements ApplicationRunner {
                         "Jeerai Workspace",
                         owner.getId(),
                         java.time.Instant.now()));
-
         workspaceMemberRepository.save(new com.jeerai.backend.model.WorkspaceMember(
                 java.util.UUID.randomUUID().toString(),
                 workspace.getId(),
                 owner.getId(),
                 WorkspaceRole.OWNER,
                 java.time.Instant.now()));
-
         users.stream()
                 .filter(user -> !owner.getId().equals(user.getId()))
                 .forEach(user -> workspaceMemberRepository.save(new com.jeerai.backend.model.WorkspaceMember(
@@ -156,7 +137,6 @@ public class MockDataInitializer implements ApplicationRunner {
                         user.getId(),
                         WorkspaceRole.MEMBER,
                         java.time.Instant.now())));
-
         projectRepository.findAll().forEach(project -> {
             if (project.getWorkspaceId() == null) {
                 project.setWorkspaceId(workspace.getId());

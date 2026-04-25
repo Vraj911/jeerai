@@ -1,8 +1,6 @@
 package com.jeerai.backend.config;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.model.AppNotification;
 import com.jeerai.backend.model.AutomationRule;
@@ -11,9 +9,7 @@ import com.jeerai.backend.model.IssueComment;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.Sprint;
 import com.jeerai.backend.model.User;
-
 import lombok.Data;
-
 @Data
 public class MockDataPayload {
     private List<User> users = new ArrayList<>();
