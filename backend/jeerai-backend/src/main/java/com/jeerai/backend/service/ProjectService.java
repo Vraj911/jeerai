@@ -60,8 +60,9 @@ public class ProjectService {
         workspaceAccessService.requireWorkspaceAdminAccess(request.getWorkspaceId());
 
         String normalizedKey = request.getKey().trim().toUpperCase();
-        boolean duplicateKey = projectRepository.findAll().stream()
-                .anyMatch(project -> normalizedKey.equalsIgnoreCase(project.getKey()));
+    boolean duplicateKey = projectRepository.findAll().stream()
+        .filter(project -> request.getWorkspaceId().equals(project.getWorkspaceId()))
+        .anyMatch(project -> normalizedKey.equalsIgnoreCase(project.getKey()));
         if (duplicateKey) {
             throw new BadRequestException("Project key already exists");
         }

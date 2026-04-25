@@ -29,6 +29,15 @@ public class JpaNotificationRepositoryAdapter implements NotificationRepository 
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<AppNotification> findByRecipientUserId(String recipientUserId) {
+        return notificationJpaRepository.findByRecipientUserIdOrderByCreatedAtDesc(recipientUserId)
+                .stream()
+                .map(mapper::toModel)
+                .toList();
+    }
+
+    @Override
     public AppNotification save(AppNotification notification) {
         return mapper.toModel(notificationJpaRepository.save(mapper.toEntity(notification)));
     }

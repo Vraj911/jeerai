@@ -1,11 +1,7 @@
 package com.jeerai.backend.dto;
-
 import java.util.List;
-
 import com.jeerai.backend.model.AutomationRule;
-
 import lombok.Data;
-
 @Data
 public class AutomationRuleUpdateRequest {
     private String name;

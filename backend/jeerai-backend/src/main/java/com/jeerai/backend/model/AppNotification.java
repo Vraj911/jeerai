@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AppNotification {
     private String id;
+    private String recipientUserId;
     private String title;
     private String description;
     private boolean read;

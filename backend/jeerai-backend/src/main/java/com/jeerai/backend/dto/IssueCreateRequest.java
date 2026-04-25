@@ -1,12 +1,8 @@
 package com.jeerai.backend.dto;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import com.jeerai.backend.model.User;
-
 import lombok.Data;
-
 @Data
 public class IssueCreateRequest {
     private String title;

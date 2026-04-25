@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCreateProject } from '@/queries/project.queries';
+import { getApiErrorMessage } from '@/api/apiError';
 import { useSessionStore } from '@/store/session.store';
 interface ProjectCreateModalProps {
   open: boolean;
@@ -54,7 +55,7 @@ export function ProjectCreateModal({ open, onOpenChange }: ProjectCreateModalPro
       onOpenChange(false);
       reset();
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to create project.';
+      const message = getApiErrorMessage(error, 'Unable to create project.');
       toast({ title: 'Project creation failed', description: message, variant: 'destructive' });
     }
   };

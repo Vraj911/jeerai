@@ -6,22 +6,27 @@ import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.model.AppNotification;
 import com.jeerai.backend.repository.NotificationRepository;
+import com.jeerai.backend.security.CurrentUserProvider;
 
 @Service
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final CurrentUserProvider currentUserProvider;
 
-    public NotificationService(NotificationRepository notificationRepository) {
+    public NotificationService(NotificationRepository notificationRepository, CurrentUserProvider currentUserProvider) {
         this.notificationRepository = notificationRepository;
+        this.currentUserProvider = currentUserProvider;
     }
 
     public List<AppNotification> getAll() {
-        return notificationRepository.findAll();
+        String userId = currentUserProvider.getCurrentUserId();
+        return notificationRepository.findByRecipientUserId(userId);
     }
 
     public AppNotification markRead(String id) {
-        AppNotification notification = notificationRepository.findAll().stream()
+        String userId = currentUserProvider.getCurrentUserId();
+        AppNotification notification = notificationRepository.findByRecipientUserId(userId).stream()
                 .filter(entry -> id.equals(entry.getId()))
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found"));
@@ -30,7 +35,8 @@ public class NotificationService {
     }
 
     public List<AppNotification> markAllRead() {
-        return notificationRepository.findAll().stream()
+        String userId = currentUserProvider.getCurrentUserId();
+        return notificationRepository.findByRecipientUserId(userId).stream()
                 .map(notification -> {
                     if (!notification.isRead()) {
                         notification.setRead(true);

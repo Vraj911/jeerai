@@ -29,6 +29,9 @@ public class NotificationEntity {
     @Column(name = "public_id", nullable = false, unique = true)
     private String publicId;
 
+    @Column(name = "recipient_user_id")
+    private String recipientUserId;
+
     @Column(nullable = false)
     private String title;
 

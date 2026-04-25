@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useRealtimeSimulation } from '@/hooks/useRealtimeSimulation';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
@@ -26,7 +25,6 @@ export function AppLayout() {
   const { setOpen: setCommandOpen } = useCommandStore();
   const { data: workspaces = [], isLoading: workspacesLoading, isFetched: workspacesFetched } = useWorkspaces();
   const { data: members = [] } = useWorkspaceMembers(currentWorkspace?.id);
-  useRealtimeSimulation();
   useEffect(() => {
     if (!hasHydrated || !currentUser || workspacesLoading) {
       return;

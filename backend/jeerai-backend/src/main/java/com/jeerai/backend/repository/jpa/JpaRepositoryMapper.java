@@ -374,6 +374,7 @@ public class JpaRepositoryMapper {
         }
         return new AppNotification(
                 entity.getPublicId(),
+                entity.getRecipientUserId(),
                 entity.getTitle(),
                 entity.getDescription(),
                 entity.isRead(),
@@ -394,6 +395,7 @@ public class JpaRepositoryMapper {
                         .findFirst()
                         .orElseGet(NotificationEntity::new);
         entity.setPublicId(valueOrGenerated(model.getId(), "notif"));
+        entity.setRecipientUserId(model.getRecipientUserId());
         entity.setTitle(model.getTitle());
         entity.setDescription(model.getDescription());
         entity.setRead(model.isRead());

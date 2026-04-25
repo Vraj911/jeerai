@@ -1,6 +1,7 @@
 package com.jeerai.backend.repository;
 
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,13 @@ public class InMemoryNotificationRepository implements NotificationRepository {
     @Override
     public List<AppNotification> findAll() {
         return store.findAllNotifications();
+    }
+
+    @Override
+    public List<AppNotification> findByRecipientUserId(String recipientUserId) {
+        return store.findAllNotifications().stream()
+                .filter(n -> Objects.equals(n.getRecipientUserId(), recipientUserId))
+                .toList();
     }
 
     @Override

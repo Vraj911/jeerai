@@ -1,9 +1,6 @@
 package com.jeerai.backend.dto;
-
 import com.jeerai.backend.model.AutomationRule;
-
 import lombok.Data;
-
 @Data
 public class AutomationRuleCreateRequest {
     private String name;
