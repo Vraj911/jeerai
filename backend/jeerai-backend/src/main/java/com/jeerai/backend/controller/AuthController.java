@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.AuthResponse;
 import com.jeerai.backend.dto.LoginRequest;
 import com.jeerai.backend.dto.SignupRequest;
+import com.jeerai.backend.dto.SignupWithInviteRequest;
 import com.jeerai.backend.service.AuthService;
 import jakarta.validation.Valid;
 @RestController
@@ -19,6 +20,11 @@ public class AuthController {
     @PostMapping(path = "/signup", consumes = MediaType.APPLICATION_JSON_VALUE)
     public AuthResponse signup(@Valid @RequestBody SignupRequest request) {
         return authService.signup(request);
+    }
+
+    @PostMapping(path = "/signup-with-invite", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public AuthResponse signupWithInvite(@Valid @RequestBody SignupWithInviteRequest request) {
+        return authService.signupWithInvite(request);
     }
     @PostMapping(path = "/login", consumes = MediaType.APPLICATION_JSON_VALUE)
     public AuthResponse login(@Valid @RequestBody LoginRequest request) {

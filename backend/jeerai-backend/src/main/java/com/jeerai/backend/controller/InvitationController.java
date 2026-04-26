@@ -5,9 +5,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
+import com.jeerai.backend.dto.InviteValidationDto;
 import com.jeerai.backend.dto.InvitationDto;
 import com.jeerai.backend.service.InvitationService;
 import jakarta.validation.Valid;
@@ -25,8 +27,8 @@ public class InvitationController {
     public List<InvitationDto> getWorkspaceInvitations(@PathVariable String workspaceId) {
         return invitationService.getWorkspaceInvitations(workspaceId);
     }
-    @GetMapping(path = "/api/invitations/{token}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public InvitationDto validateInvitation(@PathVariable String token) {
+    @GetMapping(path = { "/api/invitations/validate", "/api/invite/validate" }, produces = MediaType.APPLICATION_JSON_VALUE)
+    public InviteValidationDto validateInvitation(@RequestParam String token) {
         return invitationService.validateInvitation(token);
     }
     @PostMapping(path = "/api/invitations/{token}/accept", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

@@ -9,10 +9,10 @@ export function useInvitations(workspaceId?: string) {
     enabled: !!workspaceId && !!currentUser?.id,
   });
 }
-export function useInvitation(token?: string) {
+export function useInviteValidation(token?: string) {
   return useQuery({
-    queryKey: ['invitation', token],
-    queryFn: () => invitationApi.getByToken(token!),
+    queryKey: ['invite-validation', token],
+    queryFn: () => invitationApi.validate(token!),
     enabled: !!token,
   });
 }

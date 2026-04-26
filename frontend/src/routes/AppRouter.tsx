@@ -45,9 +45,10 @@ export function AppRouter() {
             <Route path="signup" element={<SignupPage />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
           </Route>
+          <Route path="/invite" element={<InvitationPage />} />
+          <Route path="/invite/:token" element={<InvitationPage />} />
           <Route element={<ProtectedRoute />}>
             <Route path="/onboarding" element={<OnboardingPage />} />
-            <Route path="/invite/:token" element={<InvitationPage />} />
             <Route path="/app" element={<AppLayout />}>
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="projects" element={<ProjectsPage />} />

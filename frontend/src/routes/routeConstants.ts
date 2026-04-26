@@ -6,7 +6,8 @@ export const ROUTES = {
     FORGOT_PASSWORD: '/auth/forgot-password',
   },
   ONBOARDING: '/onboarding',
-  INVITE: (token: string) => `/invite/${token}`,
+  INVITE: '/invite',
+  INVITE_WITH_TOKEN: (token: string) => `/invite?token=${encodeURIComponent(token)}`,
   APP: {
     DASHBOARD: '/app/dashboard',
     PROJECTS: '/app/projects',

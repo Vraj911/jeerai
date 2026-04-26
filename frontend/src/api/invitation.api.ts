@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import type { Invitation, WorkspaceRole } from '@/types/workspace';
+import type { InviteValidation, Invitation, WorkspaceRole } from '@/types/workspace';
 interface CreateInvitationPayload {
   workspaceId: string;
   actorUserId: string;
@@ -12,6 +12,12 @@ interface AcceptInvitationPayload {
   name?: string;
 }
 export const invitationApi = {
+  validate: async (token: string): Promise<InviteValidation> => {
+    const { data } = await apiClient.get<InviteValidation>('/invitations/validate', {
+      params: { token },
+    });
+    return data;
+  },
   create: async ({ workspaceId, ...payload }: CreateInvitationPayload): Promise<Invitation> => {
     const { data } = await apiClient.post<Invitation>(`/workspaces/${workspaceId}/invitations`, payload);
     return data;

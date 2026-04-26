@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
+import com.jeerai.backend.dto.InviteValidationDto;
 import com.jeerai.backend.dto.InvitationDto;
 import com.jeerai.backend.model.Invitation;
 import com.jeerai.backend.model.InvitationStatus;
@@ -86,10 +87,18 @@ public class InvitationService {
                 .map(invitation -> toDto(invitation, workspace.getName()))
                 .toList();
     }
-    public InvitationDto validateInvitation(String token) {
-        Invitation invitation = getPendingInvitationForCurrentUser(token);
+    public InviteValidationDto validateInvitation(String token) {
+        Invitation invitation = getPendingInvitation(token);
         Workspace workspace = workspaceService.getWorkspaceModel(invitation.getWorkspaceId());
-        return toDto(invitation, workspace.getName());
+        boolean userExists = userService.findByEmail(invitation.getEmail()).isPresent();
+        return new InviteValidationDto(
+                invitation.getToken(),
+                invitation.getWorkspaceId(),
+                workspace.getName(),
+                invitation.getEmail(),
+                invitation.getRole(),
+                userExists,
+                invitation.getStatus().name());
     }
     public InvitationDto acceptInvitation(String token, AcceptInvitationRequest request) {
         Invitation invitation = getPendingInvitationForCurrentUser(token);
@@ -98,6 +107,25 @@ public class InvitationService {
         invitation.setStatus(InvitationStatus.ACCEPTED);
         Workspace workspace = workspaceService.getWorkspaceModel(invitation.getWorkspaceId());
         return toDto(invitationRepository.save(invitation), workspace.getName());
+    }
+
+    @Transactional
+    public Invitation acceptInviteForNewUser(String token, User user) {
+        Invitation invitation = getPendingInvitation(token);
+        if (!invitation.getEmail().equalsIgnoreCase(user.getEmail())) {
+            throw new AccessDeniedException("Invitation email does not match the authenticated user");
+        }
+        workspaceMemberService.addMember(invitation.getWorkspaceId(), user.getId(), invitation.getRole());
+        invitation.setStatus(InvitationStatus.ACCEPTED);
+        return invitationRepository.save(invitation);
+    }
+
+    public Invitation validateInviteForSignup(String token) {
+        Invitation invitation = getPendingInvitation(token);
+        userService.findByEmail(invitation.getEmail()).ifPresent(existingUser -> {
+            throw new BadRequestException("A user with this email already exists");
+        });
+        return invitation;
     }
     public InvitationDto expireInvitation(String workspaceId, String invitationId) {
         Workspace workspace = workspaceService.getWorkspaceModel(workspaceId);
@@ -124,18 +152,29 @@ public class InvitationService {
     }
     private Invitation getInvitationByToken(String token) {
         return invitationRepository.findByToken(token)
-                .orElseThrow(() -> new ResourceNotFoundException("Invitation not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Invalid invite token"));
     }
-    private Invitation getPendingInvitationForCurrentUser(String token) {
+
+    private Invitation getPendingInvitation(String token) {
         Invitation invitation = getInvitationByToken(token);
-        if (invitation.getStatus() != InvitationStatus.PENDING) {
-            throw new BadRequestException("Invitation is no longer pending");
+        if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
+            throw new BadRequestException("Invite already accepted");
+        }
+        if (invitation.getStatus() == InvitationStatus.REVOKED) {
+            throw new BadRequestException("Invite already accepted");
         }
         if (isExpired(invitation)) {
             invitation.setStatus(InvitationStatus.EXPIRED);
             invitationRepository.save(invitation);
-            throw new BadRequestException("Invitation has expired");
+            throw new BadRequestException("Invite expired");
         }
+        if (invitation.getStatus() != InvitationStatus.PENDING) {
+            throw new BadRequestException("Invite already accepted");
+        }
+        return invitation;
+    }
+    private Invitation getPendingInvitationForCurrentUser(String token) {
+        Invitation invitation = getPendingInvitation(token);
         if (!invitation.getEmail().equalsIgnoreCase(currentUserProvider.getCurrentUserEmail())) {
             throw new AccessDeniedException("Invitation email does not match the authenticated user");
         }

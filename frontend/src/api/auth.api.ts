@@ -10,6 +10,11 @@ export interface SignupPayload {
   email: string;
   password: string;
 }
+export interface SignupWithInvitePayload {
+  token: string;
+  name: string;
+  password: string;
+}
 export interface AuthResponse {
   token: string;
   user: User;
@@ -22,6 +27,10 @@ export const authApi = {
   },
   signup: async (payload: SignupPayload): Promise<AuthResponse> => {
     const { data } = await apiClient.post<AuthResponse>(`${authBaseUrl}/auth/signup`, payload);
+    return data;
+  },
+  signupWithInvite: async (payload: SignupWithInvitePayload): Promise<AuthResponse> => {
+    const { data } = await apiClient.post<AuthResponse>(`${authBaseUrl}/auth/signup-with-invite`, payload);
     return data;
   },
 };

@@ -39,3 +39,12 @@ export interface DashboardAccess {
   onboardingRequired: boolean;
   reason: string;
 }
+export interface InviteValidation {
+  token: string;
+  workspaceId: string;
+  workspaceName: string;
+  email: string;
+  role: WorkspaceRole;
+  userExists: boolean;
+  status: string;
+}
