@@ -9,12 +9,22 @@ export function useWorkspaces() {
     enabled: !!currentUser?.id,
   });
 }
+
+export function useOwnedWorkspaces() {
+  const currentUser = useSessionStore((state) => state.currentUser);
+  return useQuery({
+    queryKey: ['workspaces-owned', currentUser?.id],
+    queryFn: () => workspaceApi.getOwned(),
+    enabled: !!currentUser?.id,
+  });
+}
 export function useCreateWorkspace() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: workspaceApi.create,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      queryClient.invalidateQueries({ queryKey: ['workspaces-owned'] });
       queryClient.invalidateQueries({ queryKey: ['workspace-onboarding'] });
     },
   });

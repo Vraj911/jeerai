@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -12,6 +12,7 @@ import { useSessionStore } from '@/store/session.store';
 import { useWorkspaceMembers, useWorkspaces } from '@/queries/workspace.queries';
 export function AppLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const hasHydrated = useSessionStore((state) => state.hasHydrated);
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
@@ -29,6 +30,15 @@ export function AppLayout() {
     if (!hasHydrated || !currentUser || workspacesLoading) {
       return;
     }
+    const params = new URLSearchParams(location.search);
+    const requestedWorkspaceId = params.get('workspaceId');
+    if (requestedWorkspaceId) {
+      const requested = workspaces.find((workspace) => workspace.id === requestedWorkspaceId) ?? null;
+      if (requested && requested.id !== currentWorkspace?.id) {
+        setCurrentWorkspace(requested);
+        return;
+      }
+    }
     if (!currentWorkspace && workspaces.length > 0) {
       setCurrentWorkspace(workspaces[0]);
       return;
@@ -38,7 +48,7 @@ export function AppLayout() {
       setCurrentRole(null);
       navigate(ROUTES.ONBOARDING, { replace: true });
     }
-  }, [currentUser, currentWorkspace, hasHydrated, navigate, setCurrentRole, setCurrentWorkspace, workspaces, workspacesFetched, workspacesLoading]);
+  }, [currentUser, currentWorkspace, hasHydrated, location.search, navigate, setCurrentRole, setCurrentWorkspace, workspaces, workspacesFetched, workspacesLoading]);
   useEffect(() => {
     if (!currentUser || !currentWorkspace) {
       setCurrentRole(null);

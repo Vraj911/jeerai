@@ -5,6 +5,7 @@ import { useCommandStore } from '@/store/command.store';
 import { useThemeStore } from '@/store/theme.store';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useUsers } from '@/queries/user.queries';
+import { useOwnedWorkspaces } from '@/queries/workspace.queries';
 import { ROUTES } from '@/routes/routeConstants';
 import { Search, Command, Sun, Moon, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -32,8 +33,12 @@ export function Topbar() {
   const { theme, toggleTheme } = useThemeStore();
   const currentUser = useSessionStore((state) => state.currentUser);
   const currentRole = useSessionStore((state) => state.currentRole);
+  const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
+  const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
+  const setCurrentRole = useSessionStore((state) => state.setCurrentRole);
   const clearSession = useSessionStore((state) => state.clearSession);
   const navigate = useNavigate();
+  const { data: ownedWorkspaces = [] } = useOwnedWorkspaces();
   const { data: issues = [] } = useIssues();
   const { data: projects = [] } = useProjects();
   const { data: users = [] } = useUsers();
@@ -132,6 +137,14 @@ export function Topbar() {
     setGlobalSearchOpen(false);
     setSearchQuery('');
     navigate(ROUTES.AUTH.LOGIN, { replace: true });
+  };
+
+  const handleWorkspaceSwitch = (workspaceId: string) => {
+    const next = ownedWorkspaces.find((workspace) => workspace.id === workspaceId) ?? null;
+    if (!next) return;
+    setCurrentWorkspace(next);
+    setCurrentRole(null);
+    navigate(`${ROUTES.APP.DASHBOARD}?workspaceId=${encodeURIComponent(next.id)}`);
   };
   return (
     <header className="flex h-12 items-center border-b px-4 gap-2 shrink-0 bg-background/90">
@@ -267,6 +280,26 @@ export function Topbar() {
             <div className="text-xs font-normal text-muted-foreground">{currentUser?.email ?? ''}</div>
             <div className="text-[10px] uppercase text-muted-foreground">Workspace role: {currentRole ?? 'Unknown'}</div>
           </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Your Workspaces</DropdownMenuLabel>
+          {ownedWorkspaces.length === 0 ? (
+            <DropdownMenuItem disabled className="text-xs text-muted-foreground">
+              No workspaces yet
+            </DropdownMenuItem>
+          ) : (
+            ownedWorkspaces.map((workspace) => (
+              <DropdownMenuItem
+                key={workspace.id}
+                onClick={() => handleWorkspaceSwitch(workspace.id)}
+                className={workspace.id === currentWorkspace?.id ? 'font-medium' : undefined}
+              >
+                {workspace.name}
+              </DropdownMenuItem>
+            ))
+          )}
+          <DropdownMenuItem onClick={() => navigate(ROUTES.ONBOARDING)}>
+            + Create Workspace
+          </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
             <LogOut className="mr-2 h-4 w-4" />

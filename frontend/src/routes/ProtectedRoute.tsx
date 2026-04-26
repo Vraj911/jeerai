@@ -5,10 +5,11 @@ export function ProtectedRoute() {
   const location = useLocation();
   const hasHydrated = useSessionStore((state) => state.hasHydrated);
   const currentUser = useSessionStore((state) => state.currentUser);
+  const token = useSessionStore((state) => state.token);
   if (!hasHydrated) {
     return null;
   }
-  if (!currentUser) {
+  if (!token || !currentUser) {
     return <Navigate to={ROUTES.AUTH.LOGIN} replace state={{ from: location }} />;
   }
   return <Outlet />;

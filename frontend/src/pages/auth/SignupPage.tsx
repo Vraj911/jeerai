@@ -4,28 +4,20 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ROUTES } from '@/routes/routeConstants';
-import { useCreateWorkspace } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
 import { authApi } from '@/api/auth.api';
 import { getApiErrorMessage } from '@/api/apiError';
 export default function SignupPage() {
-  const [workspaceName, setWorkspaceName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const createWorkspace = useCreateWorkspace();
   const setCurrentUser = useSessionStore((state) => state.setCurrentUser);
-  const setCurrentWorkspace = useSessionStore((state) => state.setCurrentWorkspace);
   const setToken = useSessionStore((state) => state.setToken);
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');
-    if (!workspaceName.trim()) {
-      setError('Workspace name is required.');
-      return;
-    }
     if (!name.trim()) {
       setError('Name is required.');
       return;
@@ -51,14 +43,7 @@ export default function SignupPage() {
       });
       setToken(auth.token);
       setCurrentUser(auth.user);
-      const workspace = await createWorkspace.mutateAsync({
-        name: workspaceName,
-        ownerUserId: auth.user.id,
-        ownerName: auth.user.name,
-        ownerEmail: auth.user.email,
-      });
-      setCurrentWorkspace(workspace);
-      navigate(ROUTES.APP.DASHBOARD);
+      navigate(ROUTES.ONBOARDING, { replace: true });
     } catch (err) {
       setError(getApiErrorMessage(err, 'Signup failed'));
     }
@@ -66,15 +51,6 @@ export default function SignupPage() {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <h2 className="text-center text-lg font-semibold">Create account</h2>
-      <div className="space-y-2">
-        <Label htmlFor="workspace-name">Workspace name</Label>
-        <Input
-          id="workspace-name"
-          value={workspaceName}
-          onChange={(event) => setWorkspaceName(event.target.value)}
-          placeholder="My Team"
-        />
-      </div>
       <div className="space-y-2">
         <Label htmlFor="name">Your name</Label>
         <Input id="name" value={name} onChange={(event) => setName(event.target.value)} placeholder="Jane Doe" />
@@ -101,7 +77,7 @@ export default function SignupPage() {
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
       <Button type="submit" className="w-full">
-        Create workspace
+        Create account
       </Button>
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}

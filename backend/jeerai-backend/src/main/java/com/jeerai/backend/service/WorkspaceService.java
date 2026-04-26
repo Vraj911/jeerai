@@ -35,9 +35,19 @@ public class WorkspaceService {
     }
     public WorkspaceDto createWorkspace(CreateWorkspaceRequest request) {
         User owner = userService.getById(currentUserProvider.getCurrentUserId());
+
+        String normalizedName = request.getName().trim();
+        boolean nameExistsForOwner = workspaceRepository.findAll().stream()
+            .anyMatch(workspace -> owner.getId().equals(workspace.getOwnerId())
+                && workspace.getName() != null
+                && workspace.getName().trim().equalsIgnoreCase(normalizedName));
+        if (nameExistsForOwner) {
+            throw new BadRequestException("You already have a workspace with this name");
+        }
+
         Workspace workspace = workspaceRepository.save(new Workspace(
                 UUID.randomUUID().toString(),
-                request.getName().trim(),
+            normalizedName,
                 owner.getId(),
                 Instant.now()));
         workspaceMemberService.addMember(workspace.getId(), owner.getId(), WorkspaceRole.OWNER);
@@ -50,6 +60,14 @@ public class WorkspaceService {
     public List<WorkspaceDto> listUserWorkspaces() {
         return workspaceMemberService.getMembershipsForCurrentUser().stream()
                 .map(membership -> toDto(getWorkspaceModel(membership.getWorkspaceId()), membership.getRole()))
+                .toList();
+    }
+
+    public List<WorkspaceDto> listOwnedWorkspaces() {
+        String currentUserId = currentUserProvider.getCurrentUserId();
+        return workspaceRepository.findAll().stream()
+                .filter(workspace -> currentUserId.equals(workspace.getOwnerId()))
+                .map(workspace -> toDto(workspace, WorkspaceRole.OWNER))
                 .toList();
     }
     public void validateMembership(String workspaceId) {

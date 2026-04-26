@@ -19,8 +19,6 @@ export const ROUTES = {
   PROJECT: {
     OVERVIEW: (id: string) => `/app/projects/${id}`,
     BOARD: (id: string) => `/app/projects/${id}/board`,
-    BACKLOG: (id: string) => `/app/projects/${id}/backlog`,
-    ISSUES: (id: string) => `/app/projects/${id}/issues`,
     ANALYTICS: (id: string) => `/app/projects/${id}/analytics`,
     AUTOMATION: (id: string) => `/app/projects/${id}/automation`,
     SETTINGS: (id: string) => `/app/projects/${id}/settings`,

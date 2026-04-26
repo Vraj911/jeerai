@@ -9,8 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 const projectTabs = [
   { label: 'Overview', path: '' },
   { label: 'Board', path: '/board' },
-  { label: 'Backlog', path: '/backlog' },
-  { label: 'Issues', path: '/issues' },
   { label: 'Analytics', path: '/analytics' },
   { label: 'Automation', path: '/automation' },
 ];

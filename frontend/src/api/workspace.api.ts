@@ -13,6 +13,10 @@ export const workspaceApi = {
     });
     return data;
   },
+  getOwned: async (): Promise<Workspace[]> => {
+    const { data } = await apiClient.get<Workspace[]>('/workspaces/owned');
+    return data;
+  },
   getOnboardingStatus: async (userId: string): Promise<OnboardingStatus> => {
     const { data } = await apiClient.get<OnboardingStatus>('/workspaces/onboarding', {
       params: { userId },

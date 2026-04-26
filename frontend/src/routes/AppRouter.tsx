@@ -17,8 +17,6 @@ const MembersPage = lazy(() => import('@/pages/workspace/MembersPage'));
 const WorkspaceSettings = lazy(() => import('@/pages/workspace/WorkspaceSettings'));
 const OverviewPage = lazy(() => import('@/pages/project/OverviewPage'));
 const BoardPage = lazy(() => import('@/pages/project/BoardPage'));
-const BacklogPage = lazy(() => import('@/pages/project/BacklogPage'));
-const IssuesListPage = lazy(() => import('@/pages/project/IssuesListPage'));
 const AnalyticsPage = lazy(() => import('@/pages/project/AnalyticsPage'));
 const AutomationPage = lazy(() => import('@/pages/project/AutomationPage'));
 const ProjectSettings = lazy(() => import('@/pages/project/ProjectSettings'));
@@ -47,9 +45,9 @@ export function AppRouter() {
             <Route path="signup" element={<SignupPage />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
           </Route>
-          <Route path="/onboarding" element={<OnboardingPage />} />
-          <Route path="/invite/:token" element={<InvitationPage />} />
           <Route element={<ProtectedRoute />}>
+            <Route path="/onboarding" element={<OnboardingPage />} />
+            <Route path="/invite/:token" element={<InvitationPage />} />
             <Route path="/app" element={<AppLayout />}>
               <Route path="dashboard" element={<DashboardPage />} />
               <Route path="projects" element={<ProjectsPage />} />
@@ -62,11 +60,10 @@ export function AppRouter() {
               <Route path="projects/:projectId" element={<ProjectLayout />}>
                 <Route index element={<OverviewPage />} />
                 <Route path="board" element={<BoardPage />} />
-                <Route path="backlog" element={<BacklogPage />} />
-                <Route path="issues" element={<IssuesListPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="automation" element={<AutomationPage />} />
                 <Route path="settings" element={<ProjectSettings />} />
+                <Route path="*" element={<Navigate to="" replace />} />
               </Route>
             </Route>
           </Route>
