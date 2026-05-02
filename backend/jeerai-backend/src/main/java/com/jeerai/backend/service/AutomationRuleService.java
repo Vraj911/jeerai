@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import com.jeerai.backend.dto.AutomationRuleCreateRequest;
 import com.jeerai.backend.dto.AutomationRuleUpdateRequest;
+import com.jeerai.backend.model.ProjectPermissionKey;
 import com.jeerai.backend.model.AutomationRule;
 import com.jeerai.backend.repository.AutomationRuleRepository;
 @Service
@@ -22,7 +23,7 @@ public class AutomationRuleService {
         return automationRuleRepository.findByProjectId(projectId);
     }
     public AutomationRule create(AutomationRuleCreateRequest request) {
-        workspaceAccessService.requireProjectAdminAccess(request.getProjectId());
+        ensureManageProjectAccess(request.getProjectId());
         AutomationRule rule = new AutomationRule(
                 "auto-" + System.currentTimeMillis(),
                 request.getName(),
@@ -37,7 +38,7 @@ public class AutomationRuleService {
     public AutomationRule update(String id, AutomationRuleUpdateRequest updated) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
-        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
+        ensureManageProjectAccess(rule.getProjectId());
         if (updated.getName() != null) rule.setName(updated.getName());
         if (updated.getProjectId() != null) rule.setProjectId(updated.getProjectId());
         if (updated.getTrigger() != null) rule.setTrigger(updated.getTrigger());
@@ -49,14 +50,20 @@ public class AutomationRuleService {
     public void delete(String id) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
-        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
+        ensureManageProjectAccess(rule.getProjectId());
         automationRuleRepository.deleteById(id);
     }
     public AutomationRule toggle(String id, boolean enabled) {
         AutomationRule rule = automationRuleRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rule not found"));
-        workspaceAccessService.requireProjectAdminAccess(rule.getProjectId());
+        ensureManageProjectAccess(rule.getProjectId());
         rule.setEnabled(enabled);
         return automationRuleRepository.save(rule);
+    }
+
+    private void ensureManageProjectAccess(String projectId) {
+        if (!workspaceAccessService.canCurrentUser(projectId, ProjectPermissionKey.MANAGE_PROJECT)) {
+            throw new AccessDeniedException("You do not have permission to manage this project");
+        }
     }
 }

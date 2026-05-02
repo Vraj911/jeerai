@@ -15,6 +15,7 @@ import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.Sprint;
 import com.jeerai.backend.model.User;
 import com.jeerai.backend.model.Invitation;
+import com.jeerai.backend.model.ProjectPermission;
 import com.jeerai.backend.model.Workspace;
 import com.jeerai.backend.model.WorkspaceMember;
 @Repository
@@ -30,6 +31,7 @@ public class MockDataStore {
     private final Map<String, Workspace> workspaces = new ConcurrentHashMap<>();
     private final Map<String, WorkspaceMember> workspaceMembers = new ConcurrentHashMap<>();
     private final Map<String, Invitation> invitations = new ConcurrentHashMap<>();
+    private final Map<String, ProjectPermission> projectPermissions = new ConcurrentHashMap<>();
     public void clearAll() {
         users.clear();
         projects.clear();
@@ -42,12 +44,14 @@ public class MockDataStore {
         workspaces.clear();
         workspaceMembers.clear();
         invitations.clear();
+        projectPermissions.clear();
     }
     public boolean isEmpty() {
         return users.isEmpty() && projects.isEmpty() && sprints.isEmpty()
                 && issues.isEmpty() && comments.isEmpty() && activities.isEmpty()
                 && rules.isEmpty() && notifications.isEmpty()
-                && workspaces.isEmpty() && workspaceMembers.isEmpty() && invitations.isEmpty();
+                && workspaces.isEmpty() && workspaceMembers.isEmpty() && invitations.isEmpty()
+                && projectPermissions.isEmpty();
     }
     public User saveUser(User user) {
         users.put(user.getId(), user);
@@ -201,5 +205,18 @@ public class MockDataStore {
         return invitations.values().stream()
                 .filter(invitation -> token.equals(invitation.getToken()))
                 .findFirst();
+    }
+    public ProjectPermission saveProjectPermission(ProjectPermission permission) {
+        String key = permission.getProjectId() + ':' + permission.getRole() + ':' + permission.getPermission();
+        projectPermissions.put(key, permission);
+        return permission;
+    }
+    public List<ProjectPermission> findProjectPermissionsByProjectId(String projectId) {
+        return projectPermissions.values().stream()
+                .filter(permission -> projectId.equals(permission.getProjectId()))
+                .toList();
+    }
+    public void deleteProjectPermissionsByProjectId(String projectId) {
+        projectPermissions.entrySet().removeIf(entry -> projectId.equals(entry.getValue().getProjectId()));
     }
 }

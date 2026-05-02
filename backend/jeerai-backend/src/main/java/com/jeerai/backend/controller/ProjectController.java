@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.ProjectCreateRequest;
 import com.jeerai.backend.dto.ProjectDto;
+import com.jeerai.backend.dto.ProjectPermissionsDto;
 import com.jeerai.backend.dto.ProjectUpdateRequest;
 import com.jeerai.backend.service.ProjectService;
 @RestController
@@ -34,5 +35,15 @@ public class ProjectController {
     @PatchMapping(path = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ProjectDto update(@PathVariable String id, @RequestBody ProjectUpdateRequest request) {
         return projectService.update(id, request);
+    }
+
+    @GetMapping(path = "/{id}/permissions", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ProjectPermissionsDto getPermissions(@PathVariable String id) {
+        return projectService.getPermissions(id);
+    }
+
+    @PatchMapping(path = "/{id}/permissions", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ProjectPermissionsDto updatePermissions(@PathVariable String id, @RequestBody ProjectPermissionsDto permissions) {
+        return projectService.updatePermissions(id, permissions);
     }
 }

@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 import com.jeerai.backend.model.Project;
+import com.jeerai.backend.model.ProjectPermissionKey;
 import com.jeerai.backend.model.WorkspaceMember;
 import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.ProjectRepository;
@@ -17,14 +18,17 @@ public class WorkspaceAccessService {
     private final WorkspaceMemberService workspaceMemberService;
     private final ProjectRepository projectRepository;
     private final CurrentUserProvider currentUserProvider;
+    private final ProjectPermissionService projectPermissionService;
 
     public WorkspaceAccessService(
             WorkspaceMemberService workspaceMemberService,
             ProjectRepository projectRepository,
-            CurrentUserProvider currentUserProvider) {
+            CurrentUserProvider currentUserProvider,
+            ProjectPermissionService projectPermissionService) {
         this.workspaceMemberService = workspaceMemberService;
         this.projectRepository = projectRepository;
         this.currentUserProvider = currentUserProvider;
+        this.projectPermissionService = projectPermissionService;
     }
 
     public WorkspaceMember requireWorkspaceReadAccess(String workspaceId) {
@@ -47,8 +51,9 @@ public class WorkspaceAccessService {
     public WorkspaceMember requireProjectIssueWriteAccess(String projectId) {
         Project project = getProject(projectId);
         WorkspaceMember membership = requireWorkspaceReadAccess(requireWorkspaceId(project));
-        if (membership.getRole() == WorkspaceRole.VIEWER) {
-            throw new AccessDeniedException("Viewers have read-only project access");
+        if (!projectPermissionService.isAllowed(projectId, membership.getRole(), ProjectPermissionKey.CREATE_ISSUES)
+                && !projectPermissionService.isAllowed(projectId, membership.getRole(), ProjectPermissionKey.EDIT_ISSUES)) {
+            throw new AccessDeniedException("You do not have write access for this project");
         }
         return membership;
     }
@@ -62,6 +67,12 @@ public class WorkspaceAccessService {
         return workspaceMemberService.getMembershipsForCurrentUser().stream()
                 .map(WorkspaceMember::getWorkspaceId)
                 .collect(Collectors.toSet());
+    }
+
+    public boolean canCurrentUser(String projectId, ProjectPermissionKey permission) {
+        Project project = getProject(projectId);
+        WorkspaceMember membership = requireWorkspaceReadAccess(requireWorkspaceId(project));
+        return projectPermissionService.isAllowed(projectId, membership.getRole(), permission);
     }
 
     private Project getProject(String projectId) {

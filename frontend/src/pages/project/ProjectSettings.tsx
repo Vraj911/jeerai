@@ -1,48 +1,72 @@
-import { useState, useEffect } from 'react';
-import { PageContainer } from '@/components/layout/PageContainer';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useProject, useUpdateProject } from '@/queries/project.queries';
-import { useWorkspaceMembers } from '@/queries/workspace.queries';
-import { useToast } from '@/hooks/use-toast';
+
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { PageContainer } from '@/components/layout/PageContainer';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { useProject, useProjectPermissions, useUpdateProject, useUpdateProjectPermissions } from '@/queries/project.queries';
+import { useWorkspaceMembers } from '@/queries/workspace.queries';
 import { useSessionStore } from '@/store/session.store';
-const ROLES = ['Admin', 'Member', 'Viewer'] as const;
-const PERMISSIONS = ['Create issues', 'Edit issues', 'Delete issues', 'Manage project', 'View analytics'] as const;
+import type { ProjectPermissionKey, ProjectPermissions } from '@/types/project';
+import type { WorkspaceRole } from '@/types/workspace';
+
+const ROLES: WorkspaceRole[] = ['ADMIN', 'MEMBER', 'VIEWER'];
+const PERMISSIONS: Array<{ key: ProjectPermissionKey; label: string }> = [
+  { key: 'CREATE_ISSUES', label: 'Create issues' },
+  { key: 'EDIT_ISSUES', label: 'Edit issues' },
+  { key: 'DELETE_ISSUES', label: 'Delete issues' },
+  { key: 'MANAGE_PROJECT', label: 'Manage project' },
+  { key: 'VIEW_ANALYTICS', label: 'View analytics' },
+];
 const MOCK_INTEGRATIONS = [
   { id: 'github', name: 'GitHub', description: 'Link commits and pull requests' },
   { id: 'slack', name: 'Slack', description: 'Get notifications in channels' },
   { id: 'email', name: 'Email', description: 'Email notifications for updates' },
 ];
+
 export default function ProjectSettings() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project, isLoading } = useProject(projectId ?? '');
+  const { data: projectPermissions } = useProjectPermissions(projectId);
   const updateProject = useUpdateProject();
-  const { toast } = useToast();
+  const updateProjectPermissions = useUpdateProjectPermissions();
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
   const { data: workspaceMembers = [] } = useWorkspaceMembers(currentWorkspace?.id);
+  const { toast } = useToast();
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [permissionMatrix, setPermissionMatrix] = useState<Record<string, Record<string, boolean>>>({});
+  const [permissionMatrix, setPermissionMatrix] = useState<ProjectPermissions['permissions']>({} as ProjectPermissions['permissions']);
+  const [permissionDirty, setPermissionDirty] = useState(false);
   const [integrations, setIntegrations] = useState<Record<string, boolean>>({
     github: false,
     slack: false,
     email: false,
   });
+
   useEffect(() => {
     if (project) {
       setName(project.name);
       setDescription(project.description);
     }
   }, [project]);
+
+  useEffect(() => {
+    if (projectPermissions?.permissions) {
+      setPermissionMatrix(projectPermissions.permissions);
+      setPermissionDirty(false);
+    }
+  }, [projectPermissions]);
+
   if (isLoading || !project) {
     return (
       <PageContainer title="Settings">
@@ -50,9 +74,11 @@ export default function ProjectSettings() {
       </PageContainer>
     );
   }
+
   const projectName = name || project.name;
   const projectDesc = description !== '' ? description : project.description;
   const members = project.members;
+
   const handleSaveGeneral = () => {
     updateProject.mutate(
       { id: project.id, data: { name: projectName, description: projectDesc } },
@@ -63,13 +89,27 @@ export default function ProjectSettings() {
       }
     );
   };
-  const handlePermissionChange = (role: string, perm: string, checked: boolean) => {
+
+  const handlePermissionChange = (role: WorkspaceRole, perm: ProjectPermissionKey, checked: boolean) => {
     setPermissionMatrix((prev) => ({
       ...prev,
       [role]: { ...(prev[role] ?? {}), [perm]: checked },
     }));
-    toast({ title: 'Permissions updated', description: 'Permission matrix has been updated.' });
+    setPermissionDirty(true);
   };
+
+  const handleSavePermissions = () => {
+    updateProjectPermissions.mutate(
+      { id: project.id, data: { projectId: project.id, permissions: permissionMatrix } },
+      {
+        onSuccess: () => {
+          setPermissionDirty(false);
+          toast({ title: 'Permissions saved', description: 'Project permissions updated successfully.' });
+        },
+      }
+    );
+  };
+
   const handleIntegrationToggle = (id: string, enabled: boolean) => {
     setIntegrations((prev) => ({ ...prev, [id]: enabled }));
     toast({
@@ -77,6 +117,7 @@ export default function ProjectSettings() {
       description: `${MOCK_INTEGRATIONS.find((i) => i.id === id)?.name} has been ${enabled ? 'enabled' : 'disabled'}.`,
     });
   };
+
   return (
     <PageContainer title="Settings">
       <Tabs defaultValue="general" className="max-w-2xl">
@@ -86,14 +127,11 @@ export default function ProjectSettings() {
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
           <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
+
         <TabsContent value="general" className="space-y-4 mt-4">
           <div className="space-y-2">
             <Label>Project Name</Label>
-            <Input
-              value={projectName}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Project name"
-            />
+            <Input value={projectName} onChange={(e) => setName(e.target.value)} placeholder="Project name" />
           </div>
           <div className="space-y-2">
             <Label>Key</Label>
@@ -112,6 +150,7 @@ export default function ProjectSettings() {
             Save
           </Button>
         </TabsContent>
+
         <TabsContent value="members" className="mt-4">
           <div className="mb-4 rounded-md border p-3 text-sm text-muted-foreground">
             Project members are currently inherited from the workspace. Roles shown here are workspace roles, not a separate project-specific permission model.
@@ -148,16 +187,21 @@ export default function ProjectSettings() {
                         );
                       })()}
                     </td>
-                    <td className="p-3 text-right text-muted-foreground">
-                      Manage in workspace settings
-                    </td>
+                    <td className="p-3 text-right text-muted-foreground">Manage in workspace settings</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
         </TabsContent>
-        <TabsContent value="permissions" className="mt-4">
+
+        <TabsContent value="permissions" className="mt-4 space-y-4">
+          <div className="flex items-center justify-between gap-3 rounded-md border p-3 text-sm">
+            <div className="text-muted-foreground">These permissions are persisted and enforced by the backend.</div>
+            <Button size="sm" onClick={handleSavePermissions} disabled={!permissionDirty || updateProjectPermissions.isPending}>
+              Save permissions
+            </Button>
+          </div>
           <div className="rounded-md border overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -171,17 +215,15 @@ export default function ProjectSettings() {
                 </tr>
               </thead>
               <tbody>
-                {PERMISSIONS.map((perm) => (
-                  <tr key={perm} className="border-b last:border-0">
-                    <td className="p-3">{perm}</td>
+                {PERMISSIONS.map(({ key, label }) => (
+                  <tr key={key} className="border-b last:border-0">
+                    <td className="p-3">{label}</td>
                     {ROLES.map((role) => (
                       <td key={role} className="p-3 text-center">
                         <Checkbox
-                          checked={permissionMatrix[role]?.[perm] ?? (role === 'Admin')}
-                          onCheckedChange={(checked) =>
-                            handlePermissionChange(role, perm, checked === true)
-                          }
-                          aria-label={`${perm} for ${role}`}
+                          checked={permissionMatrix[role]?.[key] ?? false}
+                          onCheckedChange={(checked) => handlePermissionChange(role, key, checked === true)}
+                          aria-label={`${label} for ${role}`}
                         />
                       </td>
                     ))}
@@ -191,11 +233,10 @@ export default function ProjectSettings() {
             </table>
           </div>
         </TabsContent>
+
         <TabsContent value="integrations" className="mt-4 space-y-4">
           {MOCK_INTEGRATIONS.map((int) => (
-            <div
-              key={int.id}
-              className="flex items-center justify-between rounded-md border p-4" >
+            <div key={int.id} className="flex items-center justify-between rounded-md border p-4">
               <div>
                 <p className="font-medium text-sm">{int.name}</p>
                 <p className="text-xs text-muted-foreground">{int.description}</p>
@@ -212,4 +253,3 @@ export default function ProjectSettings() {
     </PageContainer>
   );
 }
-

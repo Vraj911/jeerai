@@ -16,6 +16,7 @@ import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.User;
+import com.jeerai.backend.model.ProjectPermissionKey;
 import com.jeerai.backend.model.WorkspaceRole;
 import com.jeerai.backend.repository.ActivityRepository;
 import com.jeerai.backend.repository.IssueRepository;
@@ -76,7 +77,9 @@ public class IssueService {
     }
     public Issue create(IssueCreateRequest data) {
         String projectId = data.getProjectId() == null ? "proj-1" : data.getProjectId();
-        workspaceAccessService.requireProjectIssueWriteAccess(projectId);
+        if (!workspaceAccessService.canCurrentUser(projectId, ProjectPermissionKey.CREATE_ISSUES)) {
+            throw new AccessDeniedException("You do not have permission to create issues in this project");
+        }
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
         long existing = issueRepository.findByProjectId(projectId).size();
@@ -110,7 +113,9 @@ public class IssueService {
     }
     public Issue update(String id, JsonNode data) {
         Issue issue = getById(id);
-        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
+        if (!workspaceAccessService.canCurrentUser(issue.getProjectId(), ProjectPermissionKey.EDIT_ISSUES)) {
+            throw new AccessDeniedException("You do not have permission to edit issues in this project");
+        }
         User actor = getCurrentActor();
         String beforeStatus = issue.getStatus();
         String beforePriority = issue.getPriority();
@@ -153,7 +158,9 @@ public class IssueService {
     }
     public Issue updateStatus(String id, String status) {
         Issue issue = getById(id);
-        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
+        if (!workspaceAccessService.canCurrentUser(issue.getProjectId(), ProjectPermissionKey.EDIT_ISSUES)) {
+            throw new AccessDeniedException("You do not have permission to edit issues in this project");
+        }
         User actor = getCurrentActor();
         String beforeStatus = issue.getStatus();
         issue.setStatus(status);
@@ -174,7 +181,9 @@ public class IssueService {
     }
     public IssueComment addComment(String issueId, AddCommentRequest request) {
         Issue issue = getById(issueId);
-        workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
+        if (!workspaceAccessService.canCurrentUser(issue.getProjectId(), ProjectPermissionKey.EDIT_ISSUES)) {
+            throw new AccessDeniedException("You do not have permission to comment on issues in this project");
+        }
         User author = getCurrentActor();
         IssueComment comment = new IssueComment(
                 "comment-" + System.currentTimeMillis(),
@@ -273,6 +282,9 @@ public class IssueService {
         int issueIndex = Math.floorMod((int) Math.floor(r * writableIssues.size()), writableIssues.size());
         Issue issue = writableIssues.get(issueIndex);
         workspaceAccessService.requireProjectIssueWriteAccess(issue.getProjectId());
+        if (!workspaceAccessService.canCurrentUser(issue.getProjectId(), ProjectPermissionKey.EDIT_ISSUES)) {
+            throw new AccessDeniedException("You do not have permission to edit issues in this project");
+        }
         int statusIndex = STATUS_FLOW.indexOf(issue.getStatus());
         int priorityIndex = PRIORITY_FLOW.indexOf(issue.getPriority());
         boolean flipPriority = r > 0.6;

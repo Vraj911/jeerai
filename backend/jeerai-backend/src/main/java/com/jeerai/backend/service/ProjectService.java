@@ -7,9 +7,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import com.jeerai.backend.dto.ProjectCreateRequest;
 import com.jeerai.backend.dto.ProjectDto;
+import com.jeerai.backend.dto.ProjectPermissionsDto;
 import com.jeerai.backend.dto.ProjectUpdateRequest;
 import com.jeerai.backend.dto.UserDto;
 import com.jeerai.backend.model.Project;
+import com.jeerai.backend.model.ProjectPermissionKey;
 import com.jeerai.backend.model.User;
 import com.jeerai.backend.repository.ProjectRepository;
 import com.jeerai.backend.repository.UserRepository;
@@ -18,15 +20,18 @@ import com.jeerai.backend.security.CurrentUserProvider;
 public class ProjectService {
     private final ProjectRepository projectRepository;
     private final WorkspaceAccessService workspaceAccessService;
+    private final ProjectPermissionService projectPermissionService;
     private final UserRepository userRepository;
     private final CurrentUserProvider currentUserProvider;
     public ProjectService(
             ProjectRepository projectRepository,
             WorkspaceAccessService workspaceAccessService,
+            ProjectPermissionService projectPermissionService,
             UserRepository userRepository,
             CurrentUserProvider currentUserProvider) {
         this.projectRepository = projectRepository;
         this.workspaceAccessService = workspaceAccessService;
+        this.projectPermissionService = projectPermissionService;
         this.userRepository = userRepository;
         this.currentUserProvider = currentUserProvider;
     }
@@ -69,7 +74,9 @@ public class ProjectService {
                 now,
                 now,
                 request.getWorkspaceId());
-        return toDto(projectRepository.save(project));
+            Project saved = projectRepository.save(project);
+            projectPermissionService.updatePermissions(saved.getId(), new ProjectPermissionsDto(saved.getId(), projectPermissionService.defaultMatrix()));
+            return toDto(saved);
     }
     public ProjectDto getById(String id) {
         Project project = projectRepository.findById(id)
@@ -78,7 +85,7 @@ public class ProjectService {
         return toDto(project);
     }
     public ProjectDto update(String id, ProjectUpdateRequest request) {
-        workspaceAccessService.requireProjectAdminAccess(id);
+        ensureManageProjectAccess(id);
         Project project = projectRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
         if (request.getName() != null) {
@@ -90,6 +97,28 @@ public class ProjectService {
         project.setUpdatedAt(Instant.now());
         Project saved = projectRepository.save(project);
         return toDto(saved);
+    }
+
+    public ProjectPermissionsDto getPermissions(String projectId) {
+        workspaceAccessService.requireProjectReadAccess(projectId);
+        return projectPermissionService.getPermissions(projectId);
+    }
+
+    public ProjectPermissionsDto updatePermissions(String projectId, ProjectPermissionsDto permissions) {
+        workspaceAccessService.requireWorkspaceAdminAccess(getWorkspaceId(projectId));
+        return projectPermissionService.updatePermissions(projectId, permissions);
+    }
+
+    private void ensureManageProjectAccess(String projectId) {
+        if (!workspaceAccessService.canCurrentUser(projectId, ProjectPermissionKey.MANAGE_PROJECT)) {
+            throw new AccessDeniedException("You do not have permission to manage this project");
+        }
+    }
+
+    private String getWorkspaceId(String projectId) {
+        return projectRepository.findById(projectId)
+                .map(Project::getWorkspaceId)
+                .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
     }
     private ProjectDto toDto(Project project) {
         return new ProjectDto(

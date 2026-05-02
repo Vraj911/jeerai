@@ -17,6 +17,7 @@ const MembersPage = lazy(() => import('@/pages/workspace/MembersPage'));
 const WorkspaceSettings = lazy(() => import('@/pages/workspace/WorkspaceSettings'));
 const OverviewPage = lazy(() => import('@/pages/project/OverviewPage'));
 const BoardPage = lazy(() => import('@/pages/project/BoardPage'));
+const IssuesListPage = lazy(() => import('@/pages/project/IssuesListPage'));
 const AnalyticsPage = lazy(() => import('@/pages/project/AnalyticsPage'));
 const AutomationPage = lazy(() => import('@/pages/project/AutomationPage'));
 const ProjectSettings = lazy(() => import('@/pages/project/ProjectSettings'));
@@ -61,6 +62,7 @@ export function AppRouter() {
               <Route path="projects/:projectId" element={<ProjectLayout />}>
                 <Route index element={<OverviewPage />} />
                 <Route path="board" element={<BoardPage />} />
+                <Route path="issues" element={<IssuesListPage />} />
                 <Route path="analytics" element={<AnalyticsPage />} />
                 <Route path="automation" element={<AutomationPage />} />
                 <Route path="settings" element={<ProjectSettings />} />

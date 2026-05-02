@@ -10,6 +10,7 @@ import com.jeerai.backend.dto.AnalyticsDataDto;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.repository.IssueRepository;
 import com.jeerai.backend.repository.SprintRepository;
+import com.jeerai.backend.model.ProjectPermissionKey;
 @Service
 public class AnalyticsService {
     private final IssueRepository issueRepository;
@@ -24,7 +25,9 @@ public class AnalyticsService {
         this.workspaceAccessService = workspaceAccessService;
     }
     public AnalyticsDataDto getProjectAnalytics(String projectId) {
-        workspaceAccessService.requireProjectReadAccess(projectId);
+                if (!workspaceAccessService.canCurrentUser(projectId, ProjectPermissionKey.VIEW_ANALYTICS)) {
+                        throw new AccessDeniedException("You do not have permission to view analytics for this project");
+                }
         List<Issue> projectIssues = issueRepository.findByProjectId(projectId);
         List<AnalyticsDataDto.StatusCount> statusCounts = List.of("todo", "in-progress", "review", "done").stream()
                 .map(status -> new AnalyticsDataDto.StatusCount(

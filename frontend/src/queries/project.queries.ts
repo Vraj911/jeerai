@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { projectApi } from '@/api/project.api';
-import type { Project } from '@/types/project';
+import type { Project, ProjectPermissions } from '@/types/project';
 export function useProjects() {
   return useQuery({
     queryKey: ['projects'],
@@ -32,6 +32,24 @@ export function useUpdateProject() {
     onSuccess: (updated) => {
       qc.invalidateQueries({ queryKey: ['projects'] });
       qc.invalidateQueries({ queryKey: ['project', updated.id] });
+    },
+  });
+}
+
+export function useProjectPermissions(id?: string) {
+  return useQuery({
+    queryKey: ['project-permissions', id],
+    queryFn: () => projectApi.getPermissions(id!),
+    enabled: !!id,
+  });
+}
+
+export function useUpdateProjectPermissions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: ProjectPermissions }) => projectApi.updatePermissions(id, data),
+    onSuccess: (updated) => {
+      qc.setQueryData(['project-permissions', updated.projectId], updated);
     },
   });
 }
