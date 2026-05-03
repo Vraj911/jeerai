@@ -4,8 +4,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Settings, Share2 } from 'lucide-react';
 import { ROUTES } from '@/routes/routeConstants';
-import { useProject } from '@/queries/project.queries';
+import { useProject, useProjectPermissions } from '@/queries/project.queries';
 import { useToast } from '@/hooks/use-toast';
+import { useSessionStore } from '@/store/session.store';
 const projectTabs = [
   { label: 'Overview', path: '' },
   { label: 'Board', path: '/board' },
@@ -16,8 +17,20 @@ const projectTabs = [
 export function ProjectLayout() {
   const { projectId } = useParams<{ projectId: string }>();
   const { data: project } = useProject(projectId ?? '');
+  const { data: projectPermissions } = useProjectPermissions(projectId);
+  const currentRole = useSessionStore((state) => state.currentRole);
   const { toast } = useToast();
   const basePath = `/app/projects/${projectId}`;
+  const visibleTabs = projectTabs.filter((tab) => {
+    if (tab.path !== '/analytics') {
+      return true;
+    }
+    if (!currentRole) {
+      return false;
+    }
+    return projectPermissions?.permissions?.[currentRole]?.VIEW_ANALYTICS ?? false;
+  });
+
   const handleShare = async () => {
     if (!projectId) {
       return;
@@ -87,7 +100,7 @@ export function ProjectLayout() {
         </div>
       </div>
       <div className="flex items-center border-b px-6 gap-1 overflow-x-auto shrink-0">
-        {projectTabs.map((tab) => (
+        {visibleTabs.map((tab) => (
           <NavLink
             key={tab.path}
             to={`${basePath}${tab.path}`}

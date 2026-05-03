@@ -73,9 +73,10 @@ For a Node.js developer, think of it like this:
 | `.env.properties` | Optional local config source imported by Spring. Intended place for `DB_URL`, `DB_USER`, `DB_PASSWORD`, `JWT_SECRET`, mail config, invite URL. |
 | `mvnw`, `mvnw.cmd` | Maven wrapper scripts so the project can build without a globally installed Maven. |
 | `README.md` | This document. |
-| `src/main/resources/application.properties` | Main app configuration. Port, datasource, JWT, Flyway, and mail settings live here. |
+| `src/main/resources/application.properties` | Main shared app configuration. Port, default profile, JWT, invite URL, and mail settings live here. |
+| `src/main/resources/application-postgres.properties` | PostgreSQL-specific datasource, JPA, and Flyway settings loaded when the `postgres` profile is active. |
 | `src/main/resources/db/migration/*.sql` | Flyway migrations. These define and evolve the database schema. |
-| `src/main/resources/mock/mock-data.json` | Seed data used by `MockDataInitializer`. |
+| `src/test/resources/application.properties` | Test-only H2 configuration used by integration tests while still exercising Flyway and JPA mappings. |
 
 ## 4. Request Flow in Spring Boot
 
@@ -146,36 +147,10 @@ Methods:
 - `addCorsMappings(CorsRegistry registry)`: registers CORS for `/api/**` and `/auth/**`.
 - `registerCorsMapping(CorsRegistry registry, String pathPattern)`: internal helper that lists allowed origins, methods, headers, and credentials.
 
-#### `config/MockDataInitializer.java`
+Current note:
 
-Purpose:
-
-- Seeds data at startup.
-- If users already exist, it backfills missing password hashes and timestamps.
-- If database/in-memory store is empty, it loads `mock/mock-data.json`.
-- Also creates a default workspace and memberships if none exist.
-
-Methods:
-
-- `run(ApplicationArguments args)`: startup seed logic.
-- `loadPayload()`: reads and deserializes `mock/mock-data.json`.
-- `safe(List<T> items)`: converts `null` lists to empty lists.
-- `seedDefaultWorkspaceIfNeeded()`: creates one workspace, adds owner/member records, and attaches orphan projects to that workspace.
-
-#### `config/MockDataPayload.java`
-
-Purpose:
-
-- DTO used only for reading seed JSON.
-
-Contents:
-
-- `users`, `projects`, `sprints`, `issues`, `comments`, `activities`, `notifications`, `automationRules`
-
-Methods:
-
-- no handwritten methods
-- Lombok generates getters/setters/constructors helpers
+- There is no startup seeder class in `config/` anymore.
+- Demo/mock behavior is now represented by the `mock` profile repositories backed by `MockDataStore`, while the default runtime path is the `postgres` profile.
 
 ## 6. Security Layer
 
@@ -1340,8 +1315,6 @@ src/main/java/com/jeerai/backend
 ├── JeeraiBackendApplication.java
 ├── config
 │   ├── DatabaseConfig.java
-│   ├── MockDataInitializer.java
-│   ├── MockDataPayload.java
 │   ├── SecurityConfig.java
 │   └── WebConfig.java
 ├── controller
@@ -1506,13 +1479,16 @@ Resources:
 ```text
 src/main/resources
 ├── application.properties
+├── application-postgres.properties
 ├── db/migration
 │   ├── V1__initial_schema.sql
 │   ├── V2__workspace_invitation_system.sql
 │   ├── V3__backfill_user_password_hashes.sql
 │   ├── V4__notification_recipient_user.sql
 │   └── V5__project_permissions.sql
-└── mock/mock-data.json
+├── graphql/
+├── static/
+└── templates/
 ```
 
 Tests:
@@ -1838,18 +1814,27 @@ Adds `project_permissions` table and project-level role/permission matrix.
 Important keys:
 
 - `spring.application.name=jeerai-backend`
-- `server.port=3000`
+- `server.port=5000`
 - `spring.config.import=optional:file:./.env.properties`
 - `spring.profiles.default=postgres`
-- `spring.datasource.*` for PostgreSQL
-- `spring.jpa.hibernate.ddl-auto=validate`
-- `spring.flyway.enabled=true`
 - `app.security.jwt.secret`
 - `app.security.jwt.expiration`
 - `app.invitation.base-url`
 - `app.mail.enabled`
 - `app.mail.from`
 - `spring.mail.*`
+
+### `application-postgres.properties`
+
+Important keys:
+
+- `spring.datasource.url`
+- `spring.datasource.username`
+- `spring.datasource.password`
+- `spring.datasource.driver-class-name`
+- `spring.jpa.hibernate.ddl-auto=validate`
+- `spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect`
+- `spring.flyway.enabled=true`
 
 Important interview point:
 
@@ -1859,24 +1844,19 @@ That is the safer production approach.
 
 ## 19. Seed Data Behavior
 
-`mock/mock-data.json` seeds:
+The old `mock/mock-data.json` and `MockDataInitializer` startup seeder are no longer part of the codebase.
 
-- 4 users
-- 2 projects
-- 2 sprints
-- 13 issues
-- comments
-- activities
-- notifications
-- automation rules
+Current reality:
 
-Then `MockDataInitializer`:
+- the default runtime path is the `postgres` profile
+- PostgreSQL schema is created/evolved by Flyway migrations
+- the `mock` profile still exists for the in-memory repository adapters backed by `MockDataStore`
+- integration tests use H2 with Flyway and JPA validation through `src/test/resources/application.properties`
 
-- hashes missing passwords with default password `password`
-- sets missing `createdAt`
-- creates default workspace if missing
-- adds owner/member workspace memberships
-- attaches projects to workspace if `workspaceId` was null
+Important note:
+
+- if you want seeded demo data in the current codebase, it must come from explicit DB inserts, test setup, or future bootstrap code
+- there is no startup class in `config/` that populates demo data automatically
 
 ## 20. Tests
 
@@ -1885,7 +1865,7 @@ Then `MockDataInitializer`:
 What it proves:
 
 - signup returns JWT and user payload
-- seeded mock user can log in with `john@jeera.io / password`
+- login flow works for the known integration-test credentials currently used by the suite
 - protected API requires JWT
 
 ### `WorkspaceServiceIntegrationTest.java`
@@ -2012,7 +1992,7 @@ These are worth mentioning honestly if asked what is incomplete:
 
 Use this answer:
 
-> JeerAI backend is a layered Spring Boot application using JWT auth, workspace-based multi-tenancy, project-level authorization, and a repository abstraction that supports both in-memory seed data and PostgreSQL via JPA. Controllers stay thin, services own business rules, repository interfaces hide storage details, and JPA adapters map between domain models and entity classes. Database schema is managed through Flyway migrations rather than Hibernate auto-creation. Core features include auth, workspaces, invitations, projects, issues, comments, activities, notifications, analytics, and stored automation rules.
+> JeerAI backend is a layered Spring Boot application using JWT auth, workspace-based multi-tenancy, project-level authorization, and a repository abstraction that supports both profile-based in-memory repositories and PostgreSQL via JPA. Controllers stay thin, services own business rules, repository interfaces hide storage details, and JPA adapters map between domain models and entity classes. Database schema is managed through Flyway migrations rather than Hibernate auto-creation. Core features include auth, workspaces, invitations, projects, issues, comments, activities, notifications, analytics, an AI endpoint stub, and stored automation rules.
 
 ## 25. How to Run
 
@@ -2032,7 +2012,7 @@ Windows:
 .\mvnw.cmd spring-boot:run
 ```
 
-The app starts on port `3000`.
+The app starts on port `5000`.
 
 ## 26. Final Mental Model
 

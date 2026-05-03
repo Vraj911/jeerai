@@ -1,8 +1,12 @@
 import { useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { useProjectAnalytics } from '@/queries/analytics.queries';
+import { useProjectPermissions } from '@/queries/project.queries';
+import { useSessionStore } from '@/store/session.store';
 import { STATUS_LABELS } from '@/lib/constants';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
+import { getApiErrorMessage } from '@/api/apiError';
 import {
   BarChart,
   Bar,
@@ -23,8 +27,15 @@ const CHART_COLORS = {
 };
 export default function AnalyticsPage() {
   const { projectId } = useParams<{ projectId: string }>();
-  const { data, isLoading } = useProjectAnalytics(projectId ?? '');
-  if (isLoading || !data) {
+  const currentUser = useSessionStore((state) => state.currentUser);
+  const currentRole = useSessionStore((state) => state.currentRole);
+  const { data: projectPermissions, isLoading: permissionsLoading } = useProjectPermissions(projectId);
+  const canViewAnalytics = currentRole
+    ? projectPermissions?.permissions?.[currentRole]?.VIEW_ANALYTICS ?? false
+    : false;
+  const { data, isLoading, isError, error } = useProjectAnalytics(projectId ?? '', currentUser?.id);
+
+  if (permissionsLoading) {
     return (
       <PageContainer title="Analytics">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -34,6 +45,62 @@ export default function AnalyticsPage() {
       </PageContainer>
     );
   }
+
+  if (!currentRole) {
+    return (
+      <PageContainer title="Analytics">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (!canViewAnalytics) {
+    return (
+      <PageContainer title="Analytics">
+        <EmptyState
+          title="Analytics unavailable"
+          description="You do not have permission to view analytics for this project."
+        />
+      </PageContainer>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <PageContainer title="Analytics">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Skeleton className="h-64" />
+          <Skeleton className="h-64" />
+        </div>
+      </PageContainer>
+    );
+  }
+
+  if (isError) {
+    return (
+      <PageContainer title="Analytics">
+        <EmptyState
+          title="Unable to load analytics"
+          description={getApiErrorMessage(error, 'Analytics could not be loaded.')}
+        />
+      </PageContainer>
+    );
+  }
+
+  if (!data) {
+    return (
+      <PageContainer title="Analytics">
+        <EmptyState
+          title="Analytics unavailable"
+          description="No analytics data is available for this project yet."
+        />
+      </PageContainer>
+    );
+  }
+
   const statusData = data.issuesByStatus.map((d) => ({
     ...d,
     name: STATUS_LABELS[d.status] ?? d.status,
