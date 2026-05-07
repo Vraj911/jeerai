@@ -1182,42 +1182,9 @@ Methods:
 - `saveAll(List<ProjectPermission> permissions)`
 - `deleteByProjectId(String projectId)`
 
-### In-memory implementations
+### In-memory implementations (removed)
 
-Files:
-
-- `InMemoryActivityRepository.java`
-- `InMemoryAutomationRuleRepository.java`
-- `InMemoryInvitationRepository.java`
-- `InMemoryIssueRepository.java`
-- `InMemoryNotificationRepository.java`
-- `InMemoryProjectPermissionRepository.java`
-- `InMemoryProjectRepository.java`
-- `InMemorySprintRepository.java`
-- `InMemoryUserRepository.java`
-- `InMemoryWorkspaceMemberRepository.java`
-- `InMemoryWorkspaceRepository.java`
-- `MockDataStore.java`
-
-Pattern:
-
-- each `InMemory*Repository` simply delegates to `MockDataStore`
-- these files implement the same repository contracts as the JPA adapters
-
-`MockDataStore.java` methods:
-
-- `clearAll()`
-- `isEmpty()`
-- `saveUser(...)`, `findAllUsers()`, `findUserById(...)`, `findUserByEmail(...)`
-- `saveProject(...)`, `findProjectById(...)`, `findAllProjects()`
-- `saveSprint(...)`, `findSprintsByProjectId(...)`
-- `saveIssue(...)`, `findIssueById(...)`, `findIssues(...)`
-- `saveComment(...)`, `findCommentsByIssueId(...)`
-- `saveActivity(...)`, `findActivities(...)`
-- `saveRule(...)`, `findRuleById(...)`, `findRules(...)`, `deleteRule(...)`
-- `saveNotification(...)`, `findAllNotifications()`
-- `saveWorkspace(...)`, `findAllWorkspaces()`, `findWorkspaceById(...)`
-- `saveWorkspaceMember(...)`, `findWorkspaceMembersByWorkspaceId(...)`, `findWorkspaceMembersByUserId(...)`, `findWorkspaceMemberById(...)`, `findWorkspaceMemberByWorkspaceIdAndUserId(...)`, `deleteWorkspaceMember(...)`
+Note: historical in-memory repository adapters and the `MockDataStore` previously used for local/demo runs have been removed from the source tree. The default runtime uses the `postgres` profile and JPA adapters. If you need seeded demo data, provide explicit DB seed scripts or test fixtures as noted in the Seed Data Behavior section.
 - `saveInvitation(...)`, `findInvitationsByWorkspaceId(...)`, `findInvitationById(...)`, `findInvitationByToken(...)`
 - `saveProjectPermission(...)`, `findProjectPermissionsByProjectId(...)`, `deleteProjectPermissionsByProjectId(...)`
 
@@ -1396,20 +1363,8 @@ src/main/java/com/jeerai/backend
 ├── repository
 │   ├── ActivityRepository.java
 │   ├── AutomationRuleRepository.java
-│   ├── InMemoryActivityRepository.java
-│   ├── InMemoryAutomationRuleRepository.java
-│   ├── InMemoryInvitationRepository.java
-│   ├── InMemoryIssueRepository.java
-│   ├── InMemoryNotificationRepository.java
-│   ├── InMemoryProjectPermissionRepository.java
-│   ├── InMemoryProjectRepository.java
-│   ├── InMemorySprintRepository.java
-│   ├── InMemoryUserRepository.java
-│   ├── InMemoryWorkspaceMemberRepository.java
-│   ├── InMemoryWorkspaceRepository.java
 │   ├── InvitationRepository.java
 │   ├── IssueRepository.java
-│   ├── MockDataStore.java
 │   ├── NotificationRepository.java
 │   ├── ProjectPermissionRepository.java
 │   ├── ProjectRepository.java
@@ -1850,7 +1805,7 @@ Current reality:
 
 - the default runtime path is the `postgres` profile
 - PostgreSQL schema is created/evolved by Flyway migrations
-- the `mock` profile still exists for the in-memory repository adapters backed by `MockDataStore`
+- the legacy in-memory `mock` profile and `MockDataStore` adapters have been removed from the main source tree; they are no longer provided by default
 - integration tests use H2 with Flyway and JPA validation through `src/test/resources/application.properties`
 
 Important note:

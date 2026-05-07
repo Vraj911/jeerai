@@ -12,7 +12,7 @@ import com.jeerai.backend.dto.ProjectCreateRequest;
 import com.jeerai.backend.dto.ProjectDto;
 import com.jeerai.backend.dto.ProjectPermissionsDto;
 import com.jeerai.backend.dto.ProjectUpdateRequest;
-import com.jeerai.backend.service.ProjectService;
+import com.jeerai.backend.service.project.ProjectService;
 @RestController
 @RequestMapping(path = "/api/projects", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ProjectController {

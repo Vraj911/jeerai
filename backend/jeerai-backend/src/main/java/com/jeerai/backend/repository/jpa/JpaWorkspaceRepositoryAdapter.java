@@ -13,7 +13,7 @@ import com.jeerai.backend.model.Workspace;
 @Repository
 @Profile("postgres")
 @Transactional
-public class JpaWorkspaceRepositoryAdapter implements com.jeerai.backend.repository.WorkspaceRepository {
+public class JpaWorkspaceRepositoryAdapter implements com.jeerai.backend.repository.workspace.WorkspaceRepository {
 
     private final WorkspaceJpaRepository workspaceJpaRepository;
     private final JpaRepositoryMapper mapper;

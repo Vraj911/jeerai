@@ -15,8 +15,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import com.jeerai.backend.dto.CreateWorkspaceRequest;
 import com.jeerai.backend.model.User;
 import com.jeerai.backend.security.AuthenticatedUser;
-import com.jeerai.backend.service.UserService;
-import com.jeerai.backend.service.WorkspaceService;
+import com.jeerai.backend.service.user.UserService;
+import com.jeerai.backend.service.workspace.WorkspaceService;
 
 @SpringBootTest(classes = JeeraiBackendApplication.class)
 class WorkspaceServiceIntegrationTest {

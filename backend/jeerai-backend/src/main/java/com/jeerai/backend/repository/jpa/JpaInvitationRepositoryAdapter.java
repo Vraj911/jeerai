@@ -10,7 +10,7 @@ import com.jeerai.backend.model.InvitationStatus;
 @Repository
 @Profile("postgres")
 @Transactional
-public class JpaInvitationRepositoryAdapter implements com.jeerai.backend.repository.InvitationRepository {
+public class JpaInvitationRepositoryAdapter implements com.jeerai.backend.repository.invitation.InvitationRepository {
     private final InvitationJpaRepository invitationJpaRepository;
     private final JpaRepositoryMapper mapper;
     public JpaInvitationRepositoryAdapter(InvitationJpaRepository invitationJpaRepository, JpaRepositoryMapper mapper) {

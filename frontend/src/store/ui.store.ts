@@ -47,7 +47,7 @@ export const useUIStore = create<UIState>()(
       setActivityPulse: (active) => set({ activityPulse: active }),
     }),
     {
-      name: 'jeera2-ui',
+      name: 'jeerAi-ui',
       partialize: (s) => ({
         sidebarCollapsed: s.sidebarCollapsed,
         collapsedBoardColumns: s.collapsedBoardColumns,

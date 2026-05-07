@@ -18,7 +18,7 @@ import com.jeerai.backend.dto.IssueStatusUpdateRequest;
 import com.jeerai.backend.dto.RandomUpdateRequest;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
-import com.jeerai.backend.service.IssueService;
+import com.jeerai.backend.service.issue.IssueService;
 @RestController
 @RequestMapping(path = "/api/issues", produces = MediaType.APPLICATION_JSON_VALUE)
 public class IssueController {

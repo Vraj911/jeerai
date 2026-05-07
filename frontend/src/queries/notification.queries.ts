@@ -1,14 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notificationApi } from '@/api/notification.api';
 import { useSessionStore } from '@/store/session.store';
-export function useNotifications() {
+
+const PAGE_SIZE = 20;
+
+export function useNotificationPages() {
   const token = useSessionStore((s) => s.token);
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['notifications'],
-    queryFn: () => notificationApi.getAll(),
+    initialPageParam: 0,
+    queryFn: ({ pageParam }) => notificationApi.getPage(pageParam as number, PAGE_SIZE),
+    getNextPageParam: (lastPage) => (lastPage.last ? undefined : lastPage.page + 1),
     enabled: Boolean(token),
   });
 }
+
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -18,6 +24,7 @@ export function useMarkNotificationRead() {
     },
   });
 }
+
 export function useMarkAllNotificationsRead() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -1,23 +1,28 @@
-import { useEffect } from 'react';
-import { useNotifications } from '@/queries/notification.queries';
+import { useEffect, useMemo } from 'react';
+import { useNotificationPages } from '@/queries/notification.queries';
 import { useNotificationStore } from '@/store/notification.store';
 import { useSessionStore } from '@/store/session.store';
+
 export function NotificationBootstrap() {
-  const { data } = useNotifications();
-  const setNotifications = useNotificationStore((s) => s.setNotifications);
+  const { data, isSuccess } = useNotificationPages();
+  const flat = useMemo(
+    () => (data?.pages ?? []).flatMap((p) => (Array.isArray(p.content) ? p.content : [])),
+    [data?.pages]
+  );
+  const replaceInboxFromServer = useNotificationStore((s) => s.replaceInboxFromServer);
   const hasHydrated = useNotificationStore((s) => s.hasHydrated);
   const token = useSessionStore((s) => s.token);
   useEffect(() => {
     if (!hasHydrated) return;
 
     if (!token) {
-      setNotifications([]);
+      replaceInboxFromServer([]);
       return;
     }
 
-    if (Array.isArray(data)) {
-      setNotifications(data);
-    }
-  }, [data, hasHydrated, setNotifications, token]);
+    if (!isSuccess) return;
+
+    replaceInboxFromServer(flat);
+  }, [flat, hasHydrated, isSuccess, replaceInboxFromServer, token]);
   return null;
 }

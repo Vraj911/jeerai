@@ -11,7 +11,7 @@ import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
 import com.jeerai.backend.dto.InviteValidationDto;
 import com.jeerai.backend.dto.InvitationDto;
-import com.jeerai.backend.service.InvitationService;
+import com.jeerai.backend.service.invitation.InvitationService;
 import jakarta.validation.Valid;
 @RestController
 public class InvitationController {

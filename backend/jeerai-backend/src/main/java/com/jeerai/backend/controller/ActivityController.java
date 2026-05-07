@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.ActivityFromIssueUpdateRequest;
 import com.jeerai.backend.model.Activity;
-import com.jeerai.backend.service.ActivityService;
+import com.jeerai.backend.service.activity.ActivityService;
 @RestController
 @RequestMapping(path = "/api/activities", produces = MediaType.APPLICATION_JSON_VALUE)
 public class ActivityController {

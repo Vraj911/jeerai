@@ -7,12 +7,17 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useNotificationStore } from '@/store/notification.store';
-import { useMarkAllNotificationsRead, useMarkNotificationRead } from '@/queries/notification.queries';
+import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useNotificationPages,
+} from '@/queries/notification.queries';
 export default function NotificationsPage() {
   const navigate = useNavigate();
   const { notifications, markAllRead, markRead } = useNotificationStore();
   const markNotificationRead = useMarkNotificationRead();
   const markAllNotificationsRead = useMarkAllNotificationsRead();
+  const { fetchNextPage, hasNextPage, isFetchingNextPage } = useNotificationPages();
   const safeNotifications = Array.isArray(notifications) ? notifications : [];
   const unreadCount = safeNotifications.filter((n) => !n.read).length;
   const handleMarkAllRead = async () => {
@@ -44,6 +49,17 @@ export default function NotificationsPage() {
             onRead={handleRead}
             onNavigate={(id) => navigate(ROUTES.ISSUE.DETAIL(id))}
           />
+          {hasNextPage ? (
+            <div className="mt-6 flex justify-center">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isFetchingNextPage}
+                onClick={() => void fetchNextPage()}>
+                {isFetchingNextPage ? 'Loading…' : 'Load more'}
+              </Button>
+            </div>
+          ) : null}
         </TabsContent>
         <TabsContent value="unread" className="mt-4">
           <NotificationList

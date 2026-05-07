@@ -7,3 +7,12 @@ export interface AppNotification {
   targetId: string;
   type: 'mention' | 'assignment' | 'status_change' | 'comment';
 }
+
+export interface NotificationPageResponse {
+  content: AppNotification[];
+  totalElements: number;
+  totalPages: number;
+  page: number;
+  size: number;
+  last: boolean;
+}

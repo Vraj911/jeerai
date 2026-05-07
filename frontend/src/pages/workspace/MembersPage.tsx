@@ -32,6 +32,7 @@ export default function MembersPage() {
   const [role, setRole] = useState<WorkspaceRole>('MEMBER');
   const { data: members = [] } = useWorkspaceMembers(currentWorkspace?.id);
   const { data: invitations = [] } = useInvitations(currentWorkspace?.id);
+  const pendingInvitations = invitations.filter((invitation) => invitation.status === 'PENDING');
   const createInvitation = useCreateInvitation();
   const canInvite = currentRole === 'OWNER' || currentRole === 'ADMIN';
   const handleInvite = async (event: React.FormEvent) => {
@@ -115,11 +116,11 @@ export default function MembersPage() {
           </TableBody>
         </Table>
       </div>
-      {canInvite && invitations.length > 0 && (
+      {canInvite && pendingInvitations.length > 0 && (
         <div className="mt-6 rounded-md border p-4">
           <h2 className="mb-3 text-sm font-semibold">Pending invitations</h2>
           <div className="space-y-2">
-            {invitations.map((invitation) => (
+            {pendingInvitations.map((invitation) => (
               <div key={invitation.id} className="flex items-center justify-between rounded-md border px-3 py-2">
                 <div>
                   <p className="text-sm font-medium">{invitation.email}</p>

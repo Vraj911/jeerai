@@ -8,7 +8,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.jeerai.backend.model.Project;
-import com.jeerai.backend.repository.ProjectRepository;
+import com.jeerai.backend.repository.project.ProjectRepository;
 
 @Repository
 @Profile("postgres")

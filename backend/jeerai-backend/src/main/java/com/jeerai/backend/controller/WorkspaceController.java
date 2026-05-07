@@ -12,8 +12,8 @@ import com.jeerai.backend.dto.DashboardAccessDto;
 import com.jeerai.backend.dto.OnboardingStatusDto;
 import com.jeerai.backend.dto.WorkspaceDto;
 import com.jeerai.backend.dto.WorkspaceMemberDto;
-import com.jeerai.backend.service.WorkspaceMemberService;
-import com.jeerai.backend.service.WorkspaceService;
+import com.jeerai.backend.service.workspace.WorkspaceMemberService;
+import com.jeerai.backend.service.workspace.WorkspaceService;
 import jakarta.validation.Valid;
 @RestController
 @RequestMapping(path = "/api/workspaces", produces = MediaType.APPLICATION_JSON_VALUE)

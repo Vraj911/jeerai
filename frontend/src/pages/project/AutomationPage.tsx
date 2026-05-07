@@ -77,7 +77,7 @@ function formatActionValue(type: ActionType, value: string, users: User[]): stri
   return value;
 }
 function normalizeTriggerValueForState(type: TriggerType, value: string) {
-  return type === 'issue_created' ? value || EMPTY_TRIGGER_VALUE : value;
+  return value && value.trim() ? value : EMPTY_TRIGGER_VALUE;
 }
 function normalizeActionValueForState(type: ActionType, value: string) {
   return type === 'send_notification' ? value || EMPTY_ACTION_VALUE : value;
@@ -115,20 +115,28 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
     normalizeActionValueForState((editRule?.action.type as ActionType) ?? 'change_status', editRule?.action.value ?? '')
   );
   const getTriggerValueOptions = () => {
-    if (triggerType === 'status_change') return STATUS_OPTIONS;
-    if (triggerType === 'priority_change') return PRIORITY_OPTIONS;
-    if (triggerType === 'assignee_change') return users.map((u) => ({ value: u.id, label: u.name }));
-    return [{ value: EMPTY_TRIGGER_VALUE, label: 'Any' }];
+    const any = [{ value: EMPTY_TRIGGER_VALUE, label: 'Any' }];
+    if (triggerType === 'status_change') return [...any, ...STATUS_OPTIONS];
+    if (triggerType === 'priority_change') return [...any, ...PRIORITY_OPTIONS];
+    if (triggerType === 'assignee_change') return [...any, ...users.map((u) => ({ value: u.id, label: u.name }))];
+    return any;
   };
   const getActionValueOptions = () => {
     if (actionType === 'change_status') return STATUS_OPTIONS;
     if (actionType === 'assign_user') return users.map((u) => ({ value: u.id, label: u.name }));
-    if (actionType === 'add_label') return [{ value: 'critical', label: 'critical' }];
     return [{ value: EMPTY_ACTION_VALUE, label: 'No extra value' }];
   };
+
+  const isMissingRequiredValues = () => {
+    if (!name.trim()) return true;
+    if (actionType === 'add_label' && !actionValue.trim()) return true;
+    if (conditions.some((c) => c.type === 'label_contains' && !c.value.trim())) return true;
+    return false;
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (isMissingRequiredValues()) return;
     const payload = {
       name: name.trim(),
       projectId,
@@ -192,15 +200,23 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>{CONDITION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
             </Select>
-            <Select value={cond.value} onValueChange={(v) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, value: v } : c))}>
-              <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {cond.type === 'status_is' && STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                {cond.type === 'priority_is' && PRIORITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                {cond.type === 'assignee_is' && users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
-                {cond.type === 'label_contains' && <SelectItem value="critical">critical</SelectItem>}
-              </SelectContent>
-            </Select>
+            {cond.type === 'label_contains' ? (
+              <Input
+                value={cond.value}
+                onChange={(e) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, value: e.target.value } : c))}
+                placeholder="e.g. critical"
+                className="w-32 h-9"
+              />
+            ) : (
+              <Select value={cond.value} onValueChange={(v) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, value: v } : c))}>
+                <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {cond.type === 'status_is' && STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {cond.type === 'priority_is' && PRIORITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                  {cond.type === 'assignee_is' && users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            )}
             <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => setConditions((p) => p.filter((_, idx) => idx !== i))}>
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -220,15 +236,24 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
             <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
             <SelectContent>{ACTION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
           </Select>
-          <Select value={actionValue} onValueChange={setActionValue}>
-            <SelectTrigger className="w-32"><SelectValue placeholder="Select..." /></SelectTrigger>
-            <SelectContent>{getActionValueOptions().map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
-          </Select>
+          {actionType === 'add_label' ? (
+            <Input
+              value={actionValue}
+              onChange={(e) => setActionValue(e.target.value)}
+              placeholder="e.g. critical"
+              className="w-32 h-9"
+            />
+          ) : (
+            <Select value={actionValue} onValueChange={setActionValue}>
+              <SelectTrigger className="w-32"><SelectValue placeholder="Select..." /></SelectTrigger>
+              <SelectContent>{getActionValueOptions().map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
+            </Select>
+          )}
         </div>
       </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-        <Button type="submit" size="sm" disabled={!name.trim()}>{editRule ? 'Update Rule' : 'Create Rule'}</Button>
+        <Button type="submit" size="sm" disabled={isMissingRequiredValues()}>{editRule ? 'Update Rule' : 'Create Rule'}</Button>
       </div>
     </form>
   );

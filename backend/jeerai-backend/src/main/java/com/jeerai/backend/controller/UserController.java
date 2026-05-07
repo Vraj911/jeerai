@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.UserDto;
 import com.jeerai.backend.security.CurrentUserProvider;
-import com.jeerai.backend.service.UserService;
+import com.jeerai.backend.service.user.UserService;
 @RestController
 @RequestMapping(path = "/api/users", produces = MediaType.APPLICATION_JSON_VALUE)
 public class UserController {

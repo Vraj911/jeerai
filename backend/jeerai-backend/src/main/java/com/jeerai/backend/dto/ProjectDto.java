@@ -16,4 +16,5 @@ public class ProjectDto {
     private List<UserDto> members;
     private Instant createdAt;
     private Instant updatedAt;
+    private String workspaceId;
 }

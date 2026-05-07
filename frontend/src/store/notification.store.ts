@@ -6,7 +6,10 @@ interface NotificationState {
   notifications: AppNotification[];
   readNotificationIds: string[];
   setHasHydrated: (hasHydrated: boolean) => void;
+  /** Merges with any previously loaded items (e.g. realtime + pagination). */
   setNotifications: (notifications: AppNotification[]) => void;
+  /** Full replace from the server-backed inbox slices (pagination); still honors persisted read IDs. */
+  replaceInboxFromServer: (notifications: AppNotification[]) => void;
   markRead: (id: string) => void;
   markAllRead: () => void;
   pushNotification: (notification: AppNotification) => void;
@@ -45,6 +48,23 @@ export const useNotificationStore = create<NotificationState>()(
           });
 
           return { notifications: merged };
+        }),
+      replaceInboxFromServer: (notifications) =>
+        set((state) => {
+          const incoming = Array.isArray(notifications) ? notifications : [];
+          const sorted = [...incoming]
+            .map((notification) => ({
+              ...notification,
+              read:
+                notification.read ||
+                state.readNotificationIds.includes(notification.id),
+            }))
+            .sort((a, b) => {
+              const at = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const bt = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return bt - at;
+            });
+          return { notifications: sorted };
         }),
       markRead: (id) =>
         set((state) => ({

@@ -10,10 +10,10 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.jeerai.backend.dto.ErrorResponse;
-import com.jeerai.backend.service.BadRequestException;
-import com.jeerai.backend.service.EmailDeliveryException;
-import com.jeerai.backend.service.ResourceNotFoundException;
-import com.jeerai.backend.service.UnauthorizedException;
+import com.jeerai.backend.service.exception.BadRequestException;
+import com.jeerai.backend.service.exception.EmailDeliveryException;
+import com.jeerai.backend.service.exception.ResourceNotFoundException;
+import com.jeerai.backend.service.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -46,7 +46,7 @@ public class GlobalExceptionHandler {
     }
     @ExceptionHandler({
             org.springframework.security.access.AccessDeniedException.class,
-            com.jeerai.backend.service.AccessDeniedException.class
+            com.jeerai.backend.service.exception.AccessDeniedException.class
     })
     public ResponseEntity<ErrorResponse> handleForbidden(RuntimeException ex, HttpServletRequest request) {
         ErrorResponse body = new ErrorResponse(

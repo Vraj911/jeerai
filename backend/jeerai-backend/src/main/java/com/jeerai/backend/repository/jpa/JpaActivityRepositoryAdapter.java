@@ -1,10 +1,11 @@
 package com.jeerai.backend.repository.jpa;
+import java.time.Instant;
 import java.util.List;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeerai.backend.model.Activity;
-import com.jeerai.backend.repository.ActivityRepository;
+import com.jeerai.backend.repository.activity.ActivityRepository;
 @Repository
 @Profile("postgres")
 @Transactional
@@ -24,6 +25,11 @@ public class JpaActivityRepositoryAdapter implements ActivityRepository {
     @Transactional(readOnly = true)
     public List<Activity> findByProjectId(String projectId) {
         return activityJpaRepository.findByProject_PublicId(projectId).stream().map(mapper::toModel).toList();
+    }
+    @Override
+    @Transactional(readOnly = true)
+    public long countByProjectIdAndCreatedAtAfter(String projectId, Instant after) {
+        return activityJpaRepository.countByProject_PublicIdAndCreatedAtAfter(projectId, after);
     }
     @Override
     public Activity save(Activity activity) {

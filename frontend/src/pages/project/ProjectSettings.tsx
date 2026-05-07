@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -27,31 +26,48 @@ const PERMISSIONS: Array<{ key: ProjectPermissionKey; label: string }> = [
   { key: 'MANAGE_PROJECT', label: 'Manage project' },
   { key: 'VIEW_ANALYTICS', label: 'View analytics' },
 ];
-const MOCK_INTEGRATIONS = [
-  { id: 'github', name: 'GitHub', description: 'Link commits and pull requests' },
-  { id: 'slack', name: 'Slack', description: 'Get notifications in channels' },
-  { id: 'email', name: 'Email', description: 'Email notifications for updates' },
-];
 
 export default function ProjectSettings() {
   const { projectId } = useParams<{ projectId: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { data: project, isLoading } = useProject(projectId ?? '');
   const { data: projectPermissions } = useProjectPermissions(projectId);
   const updateProject = useUpdateProject();
   const updateProjectPermissions = useUpdateProjectPermissions();
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
+  const currentRole = useSessionStore((state) => state.currentRole);
   const { data: workspaceMembers = [] } = useWorkspaceMembers(currentWorkspace?.id);
   const { toast } = useToast();
-
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [permissionMatrix, setPermissionMatrix] = useState<ProjectPermissions['permissions']>({} as ProjectPermissions['permissions']);
   const [permissionDirty, setPermissionDirty] = useState(false);
-  const [integrations, setIntegrations] = useState<Record<string, boolean>>({
-    github: false,
-    slack: false,
-    email: false,
-  });
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'general');
+  const canManageIntegrations =
+    !!currentRole && projectPermissions?.permissions[currentRole]?.MANAGE_PROJECT === true;
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'integrations' || tab === 'general' || tab === 'members' || tab === 'permissions') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const integ = searchParams.get('integration');
+    if (!status || !integ) return;
+    if (status === 'ok') {
+      toast({ title: 'Integration connected', description: `${integ} linked successfully.` });
+    } else {
+      toast({ title: 'Integration failed', description: 'OAuth did not complete.', variant: 'destructive' });
+    }
+    const next = new URLSearchParams(searchParams);
+    next.delete('status');
+    next.delete('integration');
+    next.delete('tab');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     if (project) {
@@ -110,17 +126,17 @@ export default function ProjectSettings() {
     );
   };
 
-  const handleIntegrationToggle = (id: string, enabled: boolean) => {
-    setIntegrations((prev) => ({ ...prev, [id]: enabled }));
-    toast({
-      title: enabled ? 'Integration enabled' : 'Integration disabled',
-      description: `${MOCK_INTEGRATIONS.find((i) => i.id === id)?.name} has been ${enabled ? 'enabled' : 'disabled'}.`,
-    });
+  const onTabChange = (v: string) => {
+    setActiveTab(v);
+    const next = new URLSearchParams(searchParams);
+    if (v === 'general') next.delete('tab');
+    else next.set('tab', v);
+    setSearchParams(next, { replace: true });
   };
 
   return (
     <PageContainer title="Settings">
-      <Tabs defaultValue="general" className="max-w-2xl">
+      <Tabs value={activeTab} onValueChange={onTabChange} className="max-w-2xl">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
@@ -234,20 +250,43 @@ export default function ProjectSettings() {
           </div>
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-4 space-y-4">
-          {MOCK_INTEGRATIONS.map((int) => (
-            <div key={int.id} className="flex items-center justify-between rounded-md border p-4">
+        <TabsContent value="integrations" className="mt-4 space-y-6">
+          {!canManageIntegrations && (
+            <p className="text-sm text-muted-foreground">You need Manage project permission to connect or disconnect integrations.</p>
+          )}
+          <div className="rounded-md border border-dashed p-4 space-y-2 opacity-80">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="font-medium text-sm">{int.name}</p>
-                <p className="text-xs text-muted-foreground">{int.description}</p>
+                <p className="font-medium text-sm flex items-center gap-2">
+                  GitHub
+                  <Badge variant="outline" className="text-[10px] font-normal">
+                    Coming soon
+                  </Badge>
+                </p>
+                <p className="text-xs text-muted-foreground">OAuth, webhooks, and repository signals.</p>
               </div>
-              <Switch
-                checked={integrations[int.id] ?? false}
-                onCheckedChange={(checked) => handleIntegrationToggle(int.id, checked)}
-                aria-label={`Enable ${int.name}`}
-              />
+              <Button size="sm" variant="ghost" disabled>
+                Connect (soon)
+              </Button>
             </div>
-          ))}
+          </div>
+
+          <div className="rounded-md border border-dashed p-4 space-y-2 opacity-80">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-medium text-sm flex items-center gap-2">
+                  Slack
+                  <Badge variant="outline" className="text-[10px] font-normal">
+                    Coming soon
+                  </Badge>
+                </p>
+                <p className="text-xs text-muted-foreground">Issue notifications and channel digests via Slack will ship in a future release.</p>
+              </div>
+              <Button size="sm" variant="ghost" disabled>
+                Connect (soon)
+              </Button>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </PageContainer>

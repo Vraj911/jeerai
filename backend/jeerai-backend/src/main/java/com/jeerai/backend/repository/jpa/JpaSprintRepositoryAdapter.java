@@ -4,7 +4,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeerai.backend.model.Sprint;
-import com.jeerai.backend.repository.SprintRepository;
+import com.jeerai.backend.repository.sprint.SprintRepository;
 @Repository
 @Profile("postgres")
 @Transactional

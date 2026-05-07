@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.jeerai.backend.entity.ProjectPermissionEntity;
 import com.jeerai.backend.model.ProjectPermission;
-import com.jeerai.backend.repository.ProjectPermissionRepository;
+import com.jeerai.backend.repository.project.ProjectPermissionRepository;
 
 @Repository
 @Profile("postgres")

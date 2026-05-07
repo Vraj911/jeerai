@@ -1,4 +1,4 @@
-export const APP_NAME = 'Jeera2';
+export const APP_NAME = 'JeerAi';
 export const SIDEBAR_WIDTH = 240;
 export const SIDEBAR_COLLAPSED_WIDTH = 56;
 export const TOPBAR_HEIGHT = 48;

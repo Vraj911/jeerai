@@ -34,6 +34,8 @@ export function useAcceptInvitation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });
       queryClient.invalidateQueries({ queryKey: ['workspace-onboarding'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-invitations'] });
+      queryClient.invalidateQueries({ queryKey: ['workspace-members'] });
     },
   });
 }

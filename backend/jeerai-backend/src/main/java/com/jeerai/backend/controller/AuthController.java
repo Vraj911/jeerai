@@ -8,7 +8,7 @@ import com.jeerai.backend.dto.AuthResponse;
 import com.jeerai.backend.dto.LoginRequest;
 import com.jeerai.backend.dto.SignupRequest;
 import com.jeerai.backend.dto.SignupWithInviteRequest;
-import com.jeerai.backend.service.AuthService;
+import com.jeerai.backend.service.auth.AuthService;
 import jakarta.validation.Valid;
 @RestController
 @RequestMapping(path = "/auth", produces = MediaType.APPLICATION_JSON_VALUE)

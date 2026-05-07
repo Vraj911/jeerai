@@ -5,7 +5,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.AnalyticsDataDto;
-import com.jeerai.backend.service.AnalyticsService;
+import com.jeerai.backend.service.analytics.AnalyticsService;
 @RestController
 @RequestMapping(path = "/api/analytics", produces = MediaType.APPLICATION_JSON_VALUE)
 public class AnalyticsController {

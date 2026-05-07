@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.model.Sprint;
-import com.jeerai.backend.service.SprintService;
+import com.jeerai.backend.service.sprint.SprintService;
 @RestController
 @RequestMapping(path = "/api/sprints", produces = MediaType.APPLICATION_JSON_VALUE)
 public class SprintController {

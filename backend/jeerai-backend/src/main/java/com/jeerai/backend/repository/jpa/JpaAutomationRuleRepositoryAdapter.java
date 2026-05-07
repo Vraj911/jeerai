@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeerai.backend.model.AutomationRule;
-import com.jeerai.backend.repository.AutomationRuleRepository;
+import com.jeerai.backend.repository.automation.AutomationRuleRepository;
 @Repository
 @Profile("postgres")
 @Transactional

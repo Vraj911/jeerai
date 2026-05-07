@@ -1,10 +1,9 @@
 import { apiClient } from './client';
-interface AiMessageResponse {
-  reply: string;
-}
+import type { AiMessageRequest, AiMessageResponse } from '@/types/ai';
+
 export const aiApi = {
-  sendMessage: async (message: string): Promise<string> => {
-    const { data } = await apiClient.post<AiMessageResponse>('/ai/message', { message });
-    return data.reply;
+  sendMessage: async (body: AiMessageRequest): Promise<AiMessageResponse> => {
+    const { data } = await apiClient.post<AiMessageResponse>('/ai/message', body);
+    return data;
   },
 };

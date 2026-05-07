@@ -6,7 +6,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.IssueComment;
-import com.jeerai.backend.repository.IssueRepository;
+import com.jeerai.backend.repository.issue.IssueRepository;
 @Repository
 @Profile("postgres")
 @Transactional

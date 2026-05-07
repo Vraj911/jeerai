@@ -9,7 +9,7 @@ import com.jeerai.backend.model.WorkspaceMember;
 @Repository
 @Profile("postgres")
 @Transactional
-public class JpaWorkspaceMemberRepositoryAdapter implements com.jeerai.backend.repository.WorkspaceMemberRepository {
+public class JpaWorkspaceMemberRepositoryAdapter implements com.jeerai.backend.repository.workspace.WorkspaceMemberRepository {
     private final WorkspaceMemberJpaRepository workspaceMemberJpaRepository;
     private final JpaRepositoryMapper mapper;
     public JpaWorkspaceMemberRepositoryAdapter(

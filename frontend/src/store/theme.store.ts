@@ -13,6 +13,6 @@ export const useThemeStore = create<ThemeState>()(
       setTheme: (theme) => set({ theme }),
       toggleTheme: () => set((s) => ({ theme: s.theme === 'light' ? 'dark' : 'light' })),
     }),
-    { name: 'jeera2-theme' }
+    { name: 'jeerAi-theme' }
   )
 );
