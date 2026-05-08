@@ -1,11 +1,19 @@
 package com.jeerai.backend.repository.jpa;
+
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import com.jeerai.backend.entity.ActivityEntity;
+
 public interface ActivityJpaRepository extends JpaRepository<ActivityEntity, UUID> {
+
     List<ActivityEntity> findByProject_PublicId(String projectId);
 
     long countByProject_PublicIdAndCreatedAtAfter(String projectId, Instant after);
+
+    Optional<ActivityEntity> findByPublicId(String publicId);
 }
