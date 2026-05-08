@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>JeerAI Backend Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+:root{
+  --bg:#0c0e14;--surface:#12151f;--surface2:#181c28;--border:#222636;--border2:#2a2f45;
+  --auth:#7c3aed;--auth-d:#2d1560;--auth-g:rgba(124,58,237,.22);
+  --ws:#0d6b52;--ws-d:#07372a;--ws-g:rgba(13,107,82,.22);
+  --proj:#b45309;--proj-d:#5a2905;--proj-g:rgba(180,83,9,.22);
+  --issue:#1a68a0;--issue-d:#0b3254;--issue-g:rgba(26,104,160,.22);
+  --notif:#b53518;--notif-d:#561908;--notif-g:rgba(181,53,24,.22);
+  --ai:#0d7490;--ai-d:#062f3b;--ai-g:rgba(13,116,144,.28);
+  --auto:#6b21a8;--auto-d:#330e52;--auto-g:rgba(107,33,168,.22);
+  --sec:#164d27;--sec-g:rgba(22,77,39,.28);
+  --txt:#dde1ef;--txt2:#8892b0;--txt3:#4a5270;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--txt);font-family:'Syne',sans-serif;padding:28px 20px 60px;}
+h1{text-align:center;font-size:26px;font-weight:800;letter-spacing:-.5px;
+  background:linear-gradient(130deg,#a78bfa,#60a5fa,#34d399);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:5px;}
+.subtitle{text-align:center;font-size:11.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:28px;}
+.legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:32px;}
+.leg{display:flex;align-items:center;gap:5px;font-size:10px;font-family:'JetBrains Mono',monospace;
+  color:var(--txt2);padding:3px 9px;border-radius:20px;border:1px solid var(--border2);background:var(--surface);}
+.ldot{width:7px;height:7px;border-radius:50%;}
+
+/* grid */
+.grid{display:grid;grid-template-columns:200px 1fr 210px;gap:18px;max-width:1380px;margin:0 auto;}
+
+/* pkg */
+.pkg{border-radius:11px;border:1px solid var(--border);background:var(--surface);padding:12px;margin-bottom:14px;}
+.pkg-t{font-size:9.5px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--border);}
+/* cls card */
+.cls{border-radius:7px;border:1px solid var(--border2);padding:7px 9px;margin-bottom:5px;
+  transition:transform .12s,box-shadow .12s;}
+.cls:hover{transform:translateY(-1px);}
+.cls:last-child{margin-bottom:0;}
+.cn{font-size:11.5px;font-weight:700;margin-bottom:2px;}
+.cd{font-size:9.5px;color:var(--txt2);font-family:'JetBrains Mono',monospace;line-height:1.45;}
+.method{font-size:9px;font-family:'JetBrains Mono',monospace;color:var(--txt3);padding:1px 0;}
+.method .mn{color:var(--txt2);}
+.method .mr{color:#6ee7b7;}
+
+/* color themes */
+.c-auth{background:var(--auth-d);border-color:var(--auth);}.c-auth .cn{color:#c4b5fd;}.c-auth:hover{box-shadow:0 4px 18px var(--auth-g);}
+.c-ws{background:var(--ws-d);border-color:var(--ws);}.c-ws .cn{color:#6ee7b7;}.c-ws:hover{box-shadow:0 4px 18px var(--ws-g);}
+.c-proj{background:var(--proj-d);border-color:var(--proj);}.c-proj .cn{color:#fcd34d;}.c-proj:hover{box-shadow:0 4px 18px var(--proj-g);}
+.c-issue{background:var(--issue-d);border-color:var(--issue);}.c-issue .cn{color:#93c5fd;}.c-issue:hover{box-shadow:0 4px 18px var(--issue-g);}
+.c-notif{background:var(--notif-d);border-color:var(--notif);}.c-notif .cn{color:#fca5a5;}.c-notif:hover{box-shadow:0 4px 18px var(--notif-g);}
+.c-ai{background:var(--ai-d);border-color:var(--ai);}.c-ai .cn{color:#67e8f9;}.c-ai:hover{box-shadow:0 4px 18px var(--ai-g);}
+.c-auto{background:var(--auto-d);border-color:var(--auto);}.c-auto .cn{color:#d8b4fe;}.c-auto:hover{box-shadow:0 4px 18px var(--auto-g);}
+.c-sec{background:#0c1a10;border-color:#1a4728;}.c-sec .cn{color:#86efac;}.c-sec:hover{box-shadow:0 4px 18px var(--sec-g);}
+.c-inf{background:#14161e;border-color:#252836;}.c-inf .cn{color:var(--txt2);}
+
+/* section label */
+.slabel{font-size:9px;font-family:'JetBrains Mono',monospace;font-weight:600;letter-spacing:2px;
+  text-transform:uppercase;color:var(--txt3);margin-bottom:8px;padding-left:2px;}
+
+/* center */
+.center{display:flex;flex-direction:column;gap:0;}
+.fsec{border-radius:13px;border:1px solid var(--border);background:var(--surface);padding:18px;margin-bottom:18px;}
+.ftitle{font-size:10.5px;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:1.8px;
+  text-transform:uppercase;margin-bottom:14px;color:var(--txt2);border-bottom:1px solid var(--border);padding-bottom:9px;}
+
+/* layer stack */
+.layers{display:flex;flex-direction:column;gap:3px;margin-bottom:14px;}
+.layer{border-radius:7px;padding:9px 12px;display:flex;align-items:center;
+  justify-content:space-between;border:1px solid var(--border2);}
+.lname{font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace;}
+.lcls{font-size:9px;color:var(--txt2);font-family:'JetBrains Mono',monospace;text-align:right;}
+.larrow{text-align:center;color:var(--txt3);font-size:10px;padding:1px 0;}
+
+/* workflow grid */
+.wgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.wf{border-radius:9px;border:1px solid var(--border2);padding:11px;background:var(--surface2);}
+.wft{font-size:10.5px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.wf ul{list-style:none;}
+.wf li{font-size:9.5px;color:var(--txt2);font-family:'JetBrains Mono',monospace;
+  padding:1.5px 0 1.5px 13px;position:relative;line-height:1.45;}
+.wf li::before{content:'→';position:absolute;left:0;color:var(--txt3);}
+.wf li .cr{font-weight:700;}
+
+/* event bus */
+.ebus{border-radius:9px;border:2px dashed var(--auto);padding:13px;margin-bottom:16px;background:rgba(107,33,168,.07);}
+.ebus-t{font-size:9.5px;font-family:'JetBrains Mono',monospace;font-weight:700;color:#d8b4fe;
+  letter-spacing:1px;text-transform:uppercase;margin-bottom:9px;}
+.erow{display:flex;align-items:center;gap:7px;margin-bottom:4px;font-size:9.5px;font-family:'JetBrains Mono',monospace;}
+.ename{background:var(--auto-d);color:#d8b4fe;border:1px solid var(--auto);border-radius:3px;padding:2px 6px;font-weight:700;}
+.etarget{color:var(--txt2);}
+
+/* filter chain */
+.fchain{display:flex;flex-direction:column;gap:3px;margin-top:8px;}
+.fstep{display:flex;align-items:center;gap:7px;background:#0b160f;border:1px solid #1a4728;
+  border-radius:5px;padding:5px 9px;font-size:9.5px;font-family:'JetBrains Mono',monospace;}
+.fnum{background:#1a4728;color:#86efac;border-radius:3px;padding:0 5px;font-weight:700;font-size:8.5px;}
+.fname2{color:#86efac;font-weight:600;}
+.fdesc{color:var(--txt3);}
+
+/* repo pattern */
+.rpat{background:var(--surface2);border-radius:7px;border:1px solid var(--border2);padding:11px;margin-bottom:9px;}
+.rrow{display:flex;align-items:center;gap:5px;font-size:9.5px;font-family:'JetBrains Mono',monospace;margin-bottom:4px;}
+.rrow:last-child{margin-bottom:0;}
+.ri{color:#67e8f9;}.ra{color:var(--txt3);}.rim{color:#a3e635;}.rj{color:#fbbf24;}
+
+/* permission table */
+.ptable{width:100%;border-collapse:collapse;font-size:9.5px;font-family:'JetBrains Mono',monospace;}
+.ptable th{text-align:left;padding:5px 7px;color:var(--txt3);border-bottom:1px solid var(--border2);}
+.ptable td{padding:4px 7px;border-bottom:1px solid var(--border);}
+.yes{color:#4ade80;text-align:center;}.no{color:#ef4444;text-align:center;}
+
+/* db */
+.dbtable{border-radius:7px;border:1px solid var(--border2);padding:7px 9px;margin-bottom:5px;background:var(--surface2);}
+.dbn{font-size:10.5px;font-weight:700;font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.dbc{font-size:8.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;line-height:1.6;}
+.pk{color:#fbbf24;}.fk{color:#60a5fa;}.idx{color:#34d399;}
+
+/* er note */
+.ernote{background:rgba(181,53,24,.1);border:1px solid #b53518;border-radius:7px;
+  padding:9px 11px;font-size:9.5px;font-family:'JetBrains Mono',monospace;color:#fca5a5;margin-bottom:11px;}
+.ernote strong{display:block;margin-bottom:3px;}
+
+.footer{text-align:center;margin-top:40px;font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--txt3);}
+</style>
+</head>
+<body>
+
+<h1>JeerAI Backend — Architecture & Workflow Map</h1>
+<p class="subtitle">Spring Boot 3 · Spring Security · Spring Data JPA · Spring AI · OpenRouter · PostgreSQL</p>
+
+<div class="legend">
+  <div class="leg"><div class="ldot" style="background:#7c3aed"></div>Auth/Security</div>
+  <div class="leg"><div class="ldot" style="background:#0d6b52"></div>Workspace</div>
+  <div class="leg"><div class="ldot" style="background:#b45309"></div>Project/Sprint</div>
+  <div class="leg"><div class="ldot" style="background:#1a68a0"></div>Issue</div>
+  <div class="leg"><div class="ldot" style="background:#b53518"></div>Notif/Activity</div>
+  <div class="leg"><div class="ldot" style="background:#0d7490"></div>AI Layer</div>
+  <div class="leg"><div class="ldot" style="background:#6b21a8"></div>Automation</div>
+  <div class="leg"><div class="ldot" style="background:#164d27"></div>Security Chain</div>
+</div>
+
+<div class="grid">
+
+<!-- ═══════════════════════ LEFT ═══════════════════════ -->
+<div>
+  <div class="slabel">HTTP Entry Layer</div>
+
+  <!-- Filter chain -->
+  <div class="pkg" style="border-color:#1a4728;background:#09110c;">
+    <div class="pkg-t" style="color:#86efac;">Security Filter Chain</div>
+    <div class="fchain">
+      <div class="fstep"><span class="fnum">1</span><span class="fname2">PrivateNetworkAccessFilter</span><span class="fdesc">Chrome PNA header</span></div>
+      <div class="fstep"><span class="fnum">2</span><span class="fname2">CorsFilter</span><span class="fdesc">Origin validation</span></div>
+      <div class="fstep"><span class="fnum">3</span><span class="fname2">JwtAuthenticationFilter</span><span class="fdesc">Bearer → SecurityContext</span></div>
+      <div class="fstep"><span class="fnum">4</span><span class="fname2">SecurityFilterChain rules</span><span class="fdesc">permitAll / authenticated</span></div>
+    </div>
+    <div style="margin-top:8px;">
+      <div class="cls c-sec">
+        <div class="cn">JwtUtil</div>
+        <div class="cd">generateToken(userId,email)→JWT<br>parseToken(token)→AuthenticatedUser</div>
+      </div>
+      <div class="cls c-sec">
+        <div class="cn">CurrentUserProvider</div>
+        <div class="cd">getCurrentUserId() from SecurityContext</div>
+      </div>
+      <div class="cls c-sec">
+        <div class="cn">JwtAuthenticationEntryPoint</div>
+        <div class="cd">Writes 401 JSON on unauth requests</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Auth -->
+  <div class="pkg" style="border-color:var(--auth);">
+    <div class="pkg-t" style="color:#c4b5fd;">controller/ Auth</div>
+    <div class="cls c-auth">
+      <div class="cn">AuthController</div>
+      <div class="cd">POST /auth/signup<br>POST /auth/login<br>POST /auth/signup-with-invite</div>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div class="pkg" style="border-color:var(--ws);">
+    <div class="pkg-t" style="color:#6ee7b7;">controller/ Workspace</div>
+    <div class="cls c-ws"><div class="cn">WorkspaceController</div><div class="cd">GET/POST workspaces · onboarding<br>dashboard-access · members</div></div>
+    <div class="cls c-ws"><div class="cn">WorkspaceMemberController</div><div class="cd">PATCH role · DELETE member</div></div>
+    <div class="cls c-ws"><div class="cn">InvitationController</div><div class="cd">create · list · validate<br>accept · expire · revoke</div></div>
+  </div>
+
+  <!-- Project -->
+  <div class="pkg" style="border-color:var(--proj);">
+    <div class="pkg-t" style="color:#fcd34d;">controller/ Project</div>
+    <div class="cls c-proj"><div class="cn">ProjectController</div><div class="cd">GET/POST projects · PATCH<br>GET/PATCH permissions</div></div>
+    <div class="cls c-proj"><div class="cn">SprintController</div><div class="cd">GET /api/sprints?projectId=</div></div>
+  </div>
+
+  <!-- Issue -->
+  <div class="pkg" style="border-color:var(--issue);">
+    <div class="pkg-t" style="color:#93c5fd;">controller/ Issue</div>
+    <div class="cls c-issue"><div class="cn">IssueController</div><div class="cd">GET/POST issues · PATCH/{id}<br>PATCH /status · comments<br>POST /simulate-random-update</div></div>
+    <div class="cls c-notif"><div class="cn">ActivityController</div><div class="cd">GET activities · POST<br>POST /from-issue-update</div></div>
+  </div>
+
+  <!-- Others -->
+  <div class="pkg" style="border-color:var(--notif);">
+    <div class="pkg-t" style="color:#fca5a5;">controller/ Other</div>
+    <div class="cls c-notif"><div class="cn">NotificationController</div><div class="cd">GET (paged) · PATCH read · read-all</div></div>
+    <div class="cls c-ai"><div class="cn">AiController</div><div class="cd">POST /api/ai/message<br>mode: generate|summary|priorities</div></div>
+    <div class="cls c-proj"><div class="cn">AnalyticsController</div><div class="cd">GET /api/analytics/projects/{id}</div></div>
+    <div class="cls c-auto"><div class="cn">AutomationRuleController</div><div class="cd">GET/POST/PATCH/DELETE rules<br>PATCH /{id}/toggle</div></div>
+    <div class="cls c-inf"><div class="cn">HealthController</div><div class="cd">GET /health → {status, timestamp}</div></div>
+    <div class="cls c-inf"><div class="cn">GlobalExceptionHandler</div><div class="cd">@RestControllerAdvice<br>Exception → HTTP status mapping</div></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ CENTER ═══════════════════════ -->
+<div class="center">
+
+  <!-- Layer Architecture -->
+  <div class="fsec">
+    <div class="ftitle">📐 Layered Architecture Flow</div>
+    <div class="layers">
+      <div class="layer" style="background:#120f1e;border-color:#3b1f6e;">
+        <span class="lname" style="color:#c4b5fd;">① Controller Layer</span>
+        <span class="lcls">@RestController · @RequestMapping<br>@PathVariable · @RequestBody · @Valid</span>
+      </div>
+      <div class="larrow">↓ calls service</div>
+      <div class="layer" style="background:#09110c;border-color:#1a4728;">
+        <span class="lname" style="color:#86efac;">② Access Gate (cross-cutting)</span>
+        <span class="lcls">WorkspaceAccessService<br>ProjectPermissionService</span>
+      </div>
+      <div class="larrow">↓ calls</div>
+      <div class="layer" style="background:#0b1522;border-color:#0c3254;">
+        <span class="lname" style="color:#93c5fd;">③ Service Layer</span>
+        <span class="lcls">@Service · @Transactional<br>All business logic lives here</span>
+      </div>
+      <div class="larrow">↓ calls via interface</div>
+      <div class="layer" style="background:#12151f;border-color:#2a2f45;">
+        <span class="lname" style="color:var(--txt2);">④ Repository Interface Layer</span>
+        <span class="lcls">Domain interfaces — zero JPA coupling<br>IssueRepository · UserRepository …</span>
+      </div>
+      <div class="larrow">↓ implemented by (@Profile postgres)</div>
+      <div class="layer" style="background:#180e00;border-color:#5a2905;">
+        <span class="lname" style="color:#fcd34d;">⑤ JPA Adapter Layer</span>
+        <span class="lcls">JpaXxxRepositoryAdapter<br>JpaRepositoryMapper (Entity ↔ Model)</span>
+      </div>
+      <div class="larrow">↓ extends</div>
+      <div class="layer" style="background:#0d1300;border-color:#2a4200;">
+        <span class="lname" style="color:#a3e635;">⑥ Spring Data JPA</span>
+        <span class="lcls">JpaRepository&lt;Entity,UUID&gt;<br>Derived queries · Pageable · @Modifying</span>
+      </div>
+      <div class="larrow">↓</div>
+      <div class="layer" style="background:#100d00;border-color:#3a2d00;">
+        <span class="lname" style="color:#fbbf24;">⑦ PostgreSQL — 13 Tables</span>
+        <span class="lcls">UUID internal PKs · publicId strings<br>Flyway migrations · UNIQUE constraints</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Repo pattern -->
+  <div class="fsec">
+    <div class="ftitle">🗄️ Repository Adapter Pattern</div>
+    <div class="rpat">
+      <div style="font-size:9.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:8px;">
+        Services depend on domain interfaces only — never on JPA directly. Fully swappable.
+      </div>
+      <div class="rrow"><span class="ri">ActivityRepository</span><span class="ra">← implements</span><span class="rim">JpaActivityRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">IssueRepository</span><span class="ra">←</span><span class="rim">JpaIssueRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">UserRepository</span><span class="ra">←</span><span class="rim">JpaUserRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">ProjectRepository</span><span class="ra">←</span><span class="rim">JpaProjectRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">WorkspaceRepository</span><span class="ra">←</span><span class="rim">JpaWorkspaceRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">NotificationRepository</span><span class="ra">←</span><span class="rim">JpaNotificationRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">AutomationRuleRepository</span><span class="ra">←</span><span class="rim">JpaAutomationRuleRepositoryAdapter</span></div>
+      <div class="rrow"><span class="ri">InvitationRepository</span><span class="ra">←</span><span class="rim">JpaInvitationRepositoryAdapter</span></div>
+      <div style="margin-top:8px;font-size:9.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;">
+        All adapters use → <span style="color:#fbbf24;">JpaRepositoryMapper</span> · converts Entity ↔ Domain Model
+      </div>
+    </div>
+  </div>
+
+  <!-- Event bus -->
+  <div class="ebus">
+    <div class="ebus-t">⚡ Spring Application Event Bus (Automation Engine)</div>
+    <div style="font-size:9.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;margin-bottom:10px;">
+      IssueService publishes AutomationEvent → AutomationExecutionService listens<br>
+      @TransactionalEventListener(AFTER_COMMIT) — fires only on committed data
+    </div>
+    <div class="erow"><span class="ename">issue_created</span><span style="color:var(--txt3)">→</span><span class="etarget">all enabled rules evaluated for project</span></div>
+    <div class="erow"><span class="ename">status_change</span><span style="color:var(--txt3)">→</span><span class="etarget">match trigger type + optional value</span></div>
+    <div class="erow"><span class="ename">priority_change</span><span style="color:var(--txt3)">→</span><span class="etarget">evaluate conditions on fresh Issue</span></div>
+    <div class="erow"><span class="ename">assignee_change</span><span style="color:var(--txt3)">→</span><span class="etarget">execute action if all conditions pass</span></div>
+    <div style="margin-top:9px;font-size:9.5px;color:var(--txt3);font-family:'JetBrains Mono',monospace;
+      background:rgba(107,33,168,.1);border-radius:5px;padding:7px 9px;">
+      🛡 ThreadLocal depth guard (max 3) prevents infinite chains<br>
+      EventOrigin.USER vs AUTOMATION prevents re-triggering on automation actions
+    </div>
+  </div>
+
+  <!-- Workflows -->
+  <div class="fsec">
+    <div class="ftitle">🔄 Key Workflows — Class Call Chains</div>
+    <div class="wgrid">
+
+      <div class="wf" style="border-color:var(--auth);">
+        <div class="wft" style="color:#c4b5fd;">🔐 Signup / Login</div>
+        <ul><li><span class="cr">AuthController</span>.signup()</li>
+        <li><span class="cr">AuthService</span> validates email uniqueness</li>
+        <li><span class="cr">UserService</span>.createUser()</li>
+        <li><span class="cr">BCryptPasswordEncoder</span>.encode()</li>
+        <li><span class="cr">UserRepository</span>.save()</li>
+        <li><span class="cr">JwtUtil</span>.generateToken()</li>
+        <li>→ AuthResponse { token, UserDto }</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--ws);">
+        <div class="wft" style="color:#6ee7b7;">📧 Workspace Invite</div>
+        <ul><li><span class="cr">InvitationController</span>.createInvitation()</li>
+        <li><span class="cr">WorkspaceMemberService</span>.checkAdminAccess()</li>
+        <li><span class="cr">InvitationService</span> validates, generates SecureRandom token</li>
+        <li><span class="cr">InvitationRepository</span>.save()</li>
+        <li><span class="cr">InvitationDeliveryService</span>.send()</li>
+        <li>→ SmtpDeliveryService (mail.enabled=true)</li>
+        <li>→ NoOpDeliveryService (default, logs only)</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--proj);">
+        <div class="wft" style="color:#fcd34d;">📁 Project Creation</div>
+        <ul><li><span class="cr">ProjectController</span>.create()</li>
+        <li><span class="cr">WorkspaceAccessService</span>.requireWorkspaceAdminAccess()</li>
+        <li><span class="cr">ProjectService</span> deduplicates key in workspace</li>
+        <li><span class="cr">ProjectRepository</span>.save()</li>
+        <li><span class="cr">ProjectPermissionService</span>.updatePermissions()</li>
+        <li>→ Seeds default permission matrix for all roles</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--issue);">
+        <div class="wft" style="color:#93c5fd;">🎫 Issue Creation</div>
+        <ul><li><span class="cr">IssueController</span>.create()</li>
+        <li><span class="cr">WorkspaceAccessService</span>.canCurrentUser(CREATE_ISSUES)</li>
+        <li><span class="cr">IssueService</span>.create() → saves issue</li>
+        <li><span class="cr">ActivityRepository</span>.save() "issue_created"</li>
+        <li><span class="cr">NotificationRepository</span>.save() notify assignee</li>
+        <li>Publishes <span class="cr">AutomationEvent</span>(issue_created)</li>
+        <li><span class="cr">AutomationExecutionService</span> fires AFTER_COMMIT</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--notif);">
+        <div class="wft" style="color:#fca5a5;">🔄 Issue Status Update</div>
+        <ul><li><span class="cr">IssueController</span>.updateStatus()</li>
+        <li><span class="cr">WorkspaceAccessService</span>.canCurrentUser(EDIT_ISSUES)</li>
+        <li><span class="cr">IssueService</span> captures before-snapshot</li>
+        <li>Updates status, sets updatedAt=now</li>
+        <li>Publishes status_change AutomationEvent</li>
+        <li><span class="cr">ActivityRepository</span>.save()</li>
+        <li>Notifies assignee + reporter (skip self)</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--ai);">
+        <div class="wft" style="color:#67e8f9;">🤖 AI Request</div>
+        <ul><li><span class="cr">AiController</span>.sendMessage()</li>
+        <li><span class="cr">AiService</span> checks access + API key validity</li>
+        <li><span class="cr">AiContextService</span>.loadContext(mode, projectId)</li>
+        <li><span class="cr">AiPromptBuilder</span> loads .txt system prompt from classpath</li>
+        <li><span class="cr">BeanOutputConverter</span> appends JSON schema to prompt</li>
+        <li><span class="cr">ChatClient</span>.prompt().call() → OpenRouter</li>
+        <li><span class="cr">AiResponseMapper</span>.map() → AiMessageResponse</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--auto);">
+        <div class="wft" style="color:#d8b4fe;">⚙️ Automation Fires</div>
+        <ul><li><span class="cr">AutomationExecutionService</span>.onAutomationEvent()</li>
+        <li>Guard: EventOrigin == USER only</li>
+        <li>Guard: ThreadLocal depth &lt; maxDepth(3)</li>
+        <li><span class="cr">AutomationConditionEvaluator</span>.evaluate()</li>
+        <li>status_is · priority_is · assignee_is · label_contains</li>
+        <li><span class="cr">AutomationActionExecutor</span>.execute()</li>
+        <li>change_status | assign_user | add_label | send_notification</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:#164d27;">
+        <div class="wft" style="color:#86efac;">📈 Analytics</div>
+        <ul><li><span class="cr">AnalyticsController</span>.getProjectAnalytics()</li>
+        <li><span class="cr">WorkspaceAccessService</span>.canCurrentUser(VIEW_ANALYTICS)</li>
+        <li><span class="cr">IssueRepository</span>.findByProjectId() all issues</li>
+        <li>In-memory groupBy status, priority, assignee</li>
+        <li><span class="cr">SprintRepository</span>.findByProjectId() for velocity</li>
+        <li>→ statusCounts, completionData, velocityData, workload</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--ws);">
+        <div class="wft" style="color:#6ee7b7;">🚀 Onboarding</div>
+        <ul><li><span class="cr">WorkspaceController</span>.getOnboardingStatus()</li>
+        <li><span class="cr">WorkspaceService</span>.getOnboardingStatus()</li>
+        <li><span class="cr">WorkspaceMemberService</span>.getMembershipsForCurrentUser()</li>
+        <li>→ { isNewUser, workspaceCount, workspaceList }</li>
+        <li>Frontend shows setup wizard if isNewUser=true</li></ul>
+      </div>
+
+      <div class="wf" style="border-color:var(--notif);">
+        <div class="wft" style="color:#fca5a5;">🔔 Notifications (Paged)</div>
+        <ul><li><span class="cr">NotificationController</span>.getPage(page, size)</li>
+        <li><span class="cr">NotificationService</span> clamps size to MAX 100</li>
+        <li><span class="cr">NotificationRepository</span>.findByRecipientUserId(Pageable)</li>
+        <li>→ Page&lt;AppNotification&gt; with metadata</li>
+        <li>markRead(id) · markAllRead() updates is_read</li></ul>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- AI Modes -->
+  <div class="fsec">
+    <div class="ftitle">🤖 AI Context Modes — Data Sent to LLM</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;">
+      <div class="wf" style="border-color:var(--ai);">
+        <div class="wft" style="color:#67e8f9;font-size:10px;">✨ GENERATE</div>
+        <ul><li>GenerateContext record</li><li>projectName, key, desc</li><li>Open issues (≤50)</li><li>Sorted by priority</li><li>→ GenerateIssuesOutput</li><li>Returns IssueDraftOutput[]</li></ul>
+      </div>
+      <div class="wf" style="border-color:var(--ai);">
+        <div class="wft" style="color:#67e8f9;font-size:10px;">📋 SUMMARY</div>
+        <ul><li>SummaryContext record</li><li>countByStatus Map</li><li>countByPriority Map</li><li>unassignedOpen count</li><li>recentActivity (7 days)</li><li>→ BacklogSummaryOutput</li></ul>
+      </div>
+      <div class="wf" style="border-color:var(--ai);">
+        <div class="wft" style="color:#67e8f9;font-size:10px;">🎯 PRIORITIES</div>
+        <ul><li>PriorityContext record</li><li>Open issues (≤30)</li><li>Sorted updatedAt DESC</li><li>assigneeName, labels</li><li>→ PriorityListOutput</li><li>Ranked suggestions[]</li></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Permission matrix -->
+  <div class="fsec">
+    <div class="ftitle">🔑 Role × Permission Matrix (ProjectPermissionService)</div>
+    <table class="ptable">
+      <thead><tr>
+        <th>Permission</th>
+        <th style="color:#fbbf24;text-align:center;">OWNER</th>
+        <th style="color:#c4b5fd;text-align:center;">ADMIN</th>
+        <th style="color:#6ee7b7;text-align:center;">MEMBER</th>
+        <th style="color:#93c5fd;text-align:center;">VIEWER</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="color:var(--txt2)">CREATE_ISSUES</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td style="color:var(--txt2)">EDIT_ISSUES</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td></tr>
+        <tr><td style="color:var(--txt2)">DELETE_ISSUES</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td style="color:var(--txt2)">MANAGE_PROJECT</td><td class="yes">✓</td><td class="yes">✓</td><td class="no">✗</td><td class="no">✗</td></tr>
+        <tr><td style="color:var(--txt2)">VIEW_ANALYTICS</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      </tbody>
+    </table>
+    <div style="font-size:8.5px;color:var(--txt3);margin-top:6px;font-family:'JetBrains Mono',monospace;">
+      OWNER bypasses matrix entirely · Stored in project_permissions table · DB-overridable per project
+    </div>
+  </div>
+
+</div><!-- end center -->
+
+<!-- ═══════════════════════ RIGHT ═══════════════════════ -->
+<div>
+  <div class="slabel">Service Classes</div>
+
+  <div class="pkg" style="border-color:var(--auth);">
+    <div class="pkg-t" style="color:#c4b5fd;">service/auth</div>
+    <div class="cls c-auth"><div class="cn">AuthService</div>
+      <div class="method"><span class="mr">AuthResponse</span> <span class="mn">signup(req)</span></div>
+      <div class="method"><span class="mr">AuthResponse</span> <span class="mn">login(req)</span></div>
+      <div class="method"><span class="mr">AuthResponse</span> <span class="mn">signupWithInvite(req)</span></div>
+    </div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--ws);">
+    <div class="pkg-t" style="color:#6ee7b7;">service/workspace</div>
+    <div class="cls c-ws"><div class="cn">WorkspaceService</div>
+      <div class="method"><span class="mn">createWorkspace · getWorkspace</span></div>
+      <div class="method"><span class="mn">listUserWorkspaces · listOwnedWorkspaces</span></div>
+      <div class="method"><span class="mn">getOnboardingStatus · getDashboardAccess</span></div>
+    </div>
+    <div class="cls c-ws"><div class="cn">WorkspaceMemberService</div>
+      <div class="method"><span class="mn">addMember · removeMember · updateRole</span></div>
+      <div class="method"><span class="mn">requireMembership · checkAdminAccess</span></div>
+      <div class="method"><span class="mn">checkOwnerAccess · isWorkspaceMember</span></div>
+    </div>
+    <div class="cls c-sec"><div class="cn">WorkspaceAccessService</div>
+      <div class="cd" style="color:#86efac;font-size:8.5px;margin-bottom:3px;">Central access gate used by ALL services</div>
+      <div class="method"><span class="mn">requireProjectReadAccess(projectId)</span></div>
+      <div class="method"><span class="mn">requireWorkspaceAdminAccess(id)</span></div>
+      <div class="method"><span class="mn">canCurrentUser(projectId, permission)</span></div>
+      <div class="method"><span class="mn">getAccessibleWorkspaceIds()</span></div>
+    </div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--proj);">
+    <div class="pkg-t" style="color:#fcd34d;">service/project · sprint</div>
+    <div class="cls c-proj"><div class="cn">ProjectService</div>
+      <div class="method"><span class="mn">getAll · getById · create · update</span></div>
+      <div class="method"><span class="mn">getPermissions · updatePermissions</span></div>
+    </div>
+    <div class="cls c-proj"><div class="cn">ProjectPermissionService</div>
+      <div class="method"><span class="mn">isAllowed(projectId, role, permission)</span></div>
+      <div class="method"><span class="mn">resolveMatrix(projectId) → Map</span></div>
+      <div class="method"><span class="mn">updatePermissions · defaultMatrix()</span></div>
+    </div>
+    <div class="cls c-proj"><div class="cn">SprintService</div>
+      <div class="method"><span class="mn">getAll(projectId?)</span></div>
+    </div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--issue);">
+    <div class="pkg-t" style="color:#93c5fd;">service/issue · activity</div>
+    <div class="cls c-issue"><div class="cn">IssueService</div>
+      <div class="method"><span class="mn">getAll · getById · create · update</span></div>
+      <div class="method"><span class="mn">updateStatus · getComments · addComment</span></div>
+      <div class="method"><span class="mn">simulateRandomUpdate(randomValue)</span></div>
+    </div>
+    <div class="cls c-notif"><div class="cn">ActivityService</div>
+      <div class="method"><span class="mn">getAll · getByProject · add</span></div>
+      <div class="method"><span class="mn">addFromIssueUpdate(request)</span></div>
+    </div>
+    <div class="cls c-notif"><div class="cn">NotificationService</div>
+      <div class="method"><span class="mn">getPage(page, size) → Page</span></div>
+      <div class="method"><span class="mn">markRead(id) · markAllRead()</span></div>
+    </div>
+    <div class="cls c-proj"><div class="cn">AnalyticsService</div>
+      <div class="method"><span class="mn">getProjectAnalytics(projectId)</span></div>
+    </div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--ai);">
+    <div class="pkg-t" style="color:#67e8f9;">service/ai</div>
+    <div class="cls c-ai"><div class="cn">AiService</div><div class="cd">Orchestrates: access→context→prompt→LLM→map</div></div>
+    <div class="cls c-ai"><div class="cn">AiContextService</div><div class="cd">loadContext(mode,projectId)<br>→ GenerateContext|SummaryContext|PriorityContext</div></div>
+    <div class="cls c-ai"><div class="cn">AiPromptBuilder</div><div class="cd">Loads system prompt .txt from classpath<br>Appends context JSON + output schema</div></div>
+    <div class="cls c-ai"><div class="cn">AiResponseMapper</div><div class="cd">BeanOutputConverter → typed POJOs<br>Maps to AiMessageResponse DTO</div></div>
+    <div class="cls c-inf"><div class="cn">AiClientConfig</div><div class="cd">@Configuration · builds OpenAiApi bean<br>OpenRouter base-url + auth headers</div></div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--auto);">
+    <div class="pkg-t" style="color:#d8b4fe;">service/automation</div>
+    <div class="cls c-auto"><div class="cn">AutomationRuleService</div><div class="cd">CRUD + toggle; requires MANAGE_PROJECT</div></div>
+    <div class="cls c-auto"><div class="cn">AutomationExecutionService</div><div class="cd">@TransactionalEventListener(AFTER_COMMIT)<br>ThreadLocal depth guard — max 3</div></div>
+    <div class="cls c-auto"><div class="cn">AutomationConditionEvaluator</div><div class="cd">status_is · priority_is<br>assignee_is · label_contains</div></div>
+    <div class="cls c-auto"><div class="cn">AutomationActionExecutor</div><div class="cd">change_status · assign_user<br>add_label · send_notification</div></div>
+  </div>
+
+  <div class="pkg" style="border-color:var(--ws);">
+    <div class="pkg-t" style="color:#6ee7b7;">service/invitation</div>
+    <div class="cls c-ws"><div class="cn">InvitationService</div><div class="cd">create · validate · accept · expire · revoke<br>SecureRandom token generation</div></div>
+    <div class="cls c-inf" style="border-color:#1a4728;"><div class="cn" style="color:#86efac;">InvitationDeliveryService (interface)</div><div class="cd">sendWorkspaceInvitation(invite,ws,link)</div></div>
+    <div class="cls c-inf"><div class="cn">SmtpInvitationDeliveryService</div><div class="cd">@ConditionalOnProperty(mail.enabled=true)<br>JavaMailSender → real SMTP</div></div>
+    <div class="cls c-inf"><div class="cn">NoOpInvitationDeliveryService</div><div class="cd">@ConditionalOnProperty(matchIfMissing=true)<br>Logs invite link, no email sent</div></div>
+  </div>
+
+  <!-- DB tables -->
+  <div class="slabel" style="margin-top:18px;">Database — 13 Tables</div>
+
+  <div class="ernote"><strong>⚠ ER Diagram Gap</strong>Integration module fully removed from codebase → ER diagram is now accurate for the 13 remaining tables listed below.</div>
+
+  <div class="pkg" style="border-color:var(--border2);">
+    <div class="dbtable"><div class="dbn" style="color:#c4b5fd;">users</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · name · <span class="idx">email UNIQUE</span> · password_hash · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#6ee7b7;">workspaces</div><div class="dbc"><span class="pk">uuid id PK</span> (IS the public ID) · name · <span class="fk">uuid owner_id FK→users</span> · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#6ee7b7;">workspace_members</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="fk">workspace_id FK</span> · <span class="fk">user_id FK</span> · role · joined_at · UNIQUE(ws_id,user_id)</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#6ee7b7;">invitations</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="fk">workspace_id FK</span> · email · role · <span class="idx">token UNIQUE</span> · status · expires_at · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fcd34d;">projects</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · key · name · description · <span class="fk">lead_id FK→users</span> · <span class="fk">workspace_id FK</span> · created_at · updated_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fcd34d;">project_members</div><div class="dbc"><span class="fk">project_id FK</span> · <span class="fk">user_id FK</span> — join table for @ManyToMany</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fcd34d;">project_permissions</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="fk">project_id FK</span> · role(enum) · permission(enum) · allowed(bool)</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fcd34d;">sprints</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · name · <span class="fk">project_id FK</span> · start_date · end_date · is_active</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#93c5fd;">issues</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · <span class="idx">key UNIQUE</span> · title · status · priority · <span class="fk">assignee_id FK→users</span> · <span class="fk">reporter_id FK→users</span> · <span class="fk">project_id FK</span> · <span class="fk">sprint_id FK (nullable)</span> · description · created_at · updated_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#93c5fd;">issue_labels</div><div class="dbc"><span class="fk">issue_id FK</span> · label string — @ElementCollection</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#93c5fd;">issue_comments</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · <span class="fk">issue_id FK</span> · <span class="fk">author_id FK→users</span> · content(text) · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fca5a5;">activities</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · type · <span class="fk">actor_id FK→users</span> · target_id · target_key · target_title · detail · <span class="fk">project_id FK</span> · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#fca5a5;">notifications</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · recipient_user_id(string) · title · description · is_read · target_id · type · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#d8b4fe;">automation_rules</div><div class="dbc"><span class="pk">uuid id PK</span> · <span class="idx">public_id UNIQUE</span> · name · <span class="fk">project_id FK</span> · trigger_type · trigger_value · action_type · action_value · enabled · created_at</div></div>
+    <div class="dbtable"><div class="dbn" style="color:#d8b4fe;">automation_rule_conditions</div><div class="dbc"><span class="fk">rule_id FK</span> · position(int) · type · value — @ElementCollection + @OrderColumn</div></div>
+  </div>
+
+  <!-- Config -->
+  <div class="slabel" style="margin-top:14px;">Config / Infrastructure</div>
+  <div class="pkg" style="border-color:var(--border2);">
+    <div class="cls c-inf"><div class="cn">SecurityConfig</div><div class="cd">@EnableWebSecurity · SecurityFilterChain<br>Filter order: PNA→CORS→JWT→Rules</div></div>
+    <div class="cls c-inf"><div class="cn">WebConfig</div><div class="cd">CORS: localhost:8080/5173 + netlify(https)<br>Methods: GET POST PUT PATCH DELETE OPTIONS</div></div>
+    <div class="cls c-inf"><div class="cn">DatabaseConfig</div><div class="cd">@Profile("postgres") · @EnableJpaRepositories<br>@EntityScan · @EnableTransactionManagement</div></div>
+    <div class="cls c-inf"><div class="cn">SystemUsersInitializer</div><div class="cd">ApplicationRunner — seeds system-automation user<br>WellKnownUsers.AUTOMATION_ACTOR_PUBLIC_ID</div></div>
+  </div>
+
+</div><!-- end right -->
+</div><!-- end grid -->
+
+<div class="footer">JeerAI Backend Architecture · Spring Boot 3 · 13 Tables · Interview Reference Map</div>
+</body></html>

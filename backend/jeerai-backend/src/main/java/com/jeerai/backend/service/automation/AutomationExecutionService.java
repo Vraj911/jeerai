@@ -2,6 +2,8 @@ package com.jeerai.backend.service.automation;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 import com.jeerai.backend.model.AutomationRule;
@@ -21,7 +23,22 @@ public class AutomationExecutionService {
     private final AutomationActionExecutor actionExecutor;
     @Value("${app.automation.max-depth:3}")
     private int maxDepth;
+    /**
+     * FIX: Added @Transactional(propagation = REQUIRES_NEW) alongside the
+     * @TransactionalEventListener.
+     *
+     * WHY: @TransactionalEventListener(AFTER_COMMIT) fires AFTER the publishing
+     * transaction has committed and is gone. Without REQUIRES_NEW, this method
+     * runs with NO active transaction. Every issueRepository.save() and
+     * activityRepository.save() inside AutomationActionExecutor would each open
+     * its own micro-transaction independently — meaning if one fails, others
+     * already committed cannot be rolled back together.
+     *
+     * REQUIRES_NEW: Opens a brand-new independent transaction for the entire
+     * automation execution chain, giving proper atomicity within automation.
+     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onAutomationEvent(AutomationEvent event) {
         if (event.getOrigin() != AutomationEvent.EventOrigin.USER) {
             return;
@@ -33,15 +50,19 @@ public class AutomationExecutionService {
         }
         try {
             if (ctx.getDepth() >= ctx.getMaxDepth()) {
-                log.warn("Automation max depth reached for issue {}, rule chain stopped", event.getIssueId());
+                log.warn("Automation max depth {} reached for issue {}, rule chain stopped",
+                        ctx.getMaxDepth(), event.getIssueId());
                 return;
             }
             ctx.incrementDepth();
-            List<AutomationRule> rules = automationRuleRepository.findByProjectId(event.getProjectId()).stream()
+            List<AutomationRule> rules = automationRuleRepository
+                    .findByProjectId(event.getProjectId())
+                    .stream()
                     .filter(AutomationRule::isEnabled)
                     .toList();
             for (AutomationRule rule : rules) {
                 if (ctx.getExecutedRuleIds().contains(rule.getId())) {
+                    log.debug("Automation rule '{}' already executed in this chain, skipping", rule.getId());
                     continue;
                 }
                 if (!triggerMatches(rule, event)) {
@@ -50,14 +71,19 @@ public class AutomationExecutionService {
                 ctx.getExecutedRuleIds().add(rule.getId());
                 Issue issue = issueRepository.findById(event.getIssueId()).orElse(null);
                 if (issue == null) {
+                    log.warn("Automation: issue {} not found, skipping rule '{}'",
+                            event.getIssueId(), rule.getName());
                     continue;
                 }
                 try {
                     if (conditionEvaluator.evaluate(rule.getConditions(), issue)) {
+                        log.info("Automation rule '{}' triggered by '{}' on issue '{}'",
+                                rule.getName(), event.getEventType(), event.getIssueId());
                         actionExecutor.execute(rule, issue, event.getProjectId());
                     }
                 } catch (Exception e) {
-                    log.error("Automation rule {} failed on issue {}: {}", rule.getId(), event.getIssueId(), e.getMessage(), e);
+                    log.error("Automation rule '{}' failed on issue '{}': {}",
+                            rule.getId(), event.getIssueId(), e.getMessage(), e);
                 }
             }
         } finally {
@@ -79,24 +105,32 @@ public class AutomationExecutionService {
                 if (!"status_change".equals(event.getEventType())) {
                     yield false;
                 }
-                yield v == null || v.isBlank() || (event.getAfter() != null
-                        && v.equalsIgnoreCase(event.getAfter().status()));
+                // v is null/blank → fire on ANY status change
+                // v has a value → fire only if after-status matches (case-insensitive)
+                yield v == null || v.isBlank()
+                        || (event.getAfter() != null
+                                && v.equalsIgnoreCase(event.getAfter().status()));
             }
             case "priority_change" -> {
                 if (!"priority_change".equals(event.getEventType())) {
                     yield false;
                 }
-                yield v == null || v.isBlank() || (event.getAfter() != null
-                        && v.equalsIgnoreCase(event.getAfter().priority()));
+                yield v == null || v.isBlank()
+                        || (event.getAfter() != null
+                                && v.equalsIgnoreCase(event.getAfter().priority()));
             }
             case "assignee_change" -> {
                 if (!"assignee_change".equals(event.getEventType())) {
                     yield false;
                 }
-                yield v == null || v.isBlank() || (event.getAfter() != null
-                        && v.equals(event.getAfter().assigneeId()));
+                yield v == null || v.isBlank()
+                        || (event.getAfter() != null
+                                && v.equals(event.getAfter().assigneeId()));
             }
-            default -> false;
+            default -> {
+                log.warn("Unknown automation trigger type '{}' in rule '{}'", t, rule.getName());
+                yield false;
+            }
         };
     }
 }
