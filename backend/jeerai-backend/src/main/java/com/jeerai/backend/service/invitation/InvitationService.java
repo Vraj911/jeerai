@@ -11,7 +11,6 @@ import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.jeerai.backend.dto.AcceptInvitationRequest;
 import com.jeerai.backend.dto.CreateInvitationRequest;
 import com.jeerai.backend.dto.InviteValidationDto;
