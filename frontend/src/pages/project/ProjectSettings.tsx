@@ -43,31 +43,13 @@ export default function ProjectSettings() {
   const [permissionMatrix, setPermissionMatrix] = useState<ProjectPermissions['permissions']>({} as ProjectPermissions['permissions']);
   const [permissionDirty, setPermissionDirty] = useState(false);
   const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') ?? 'general');
-  const canManageIntegrations =
-    !!currentRole && projectPermissions?.permissions[currentRole]?.MANAGE_PROJECT === true;
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab === 'integrations' || tab === 'general' || tab === 'members' || tab === 'permissions') {
+    if (tab === 'general' || tab === 'members' || tab === 'permissions') {
       setActiveTab(tab);
     }
   }, [searchParams]);
-
-  useEffect(() => {
-    const status = searchParams.get('status');
-    const integ = searchParams.get('integration');
-    if (!status || !integ) return;
-    if (status === 'ok') {
-      toast({ title: 'Integration connected', description: `${integ} linked successfully.` });
-    } else {
-      toast({ title: 'Integration failed', description: 'OAuth did not complete.', variant: 'destructive' });
-    }
-    const next = new URLSearchParams(searchParams);
-    next.delete('status');
-    next.delete('integration');
-    next.delete('tab');
-    setSearchParams(next, { replace: true });
-  }, [searchParams, setSearchParams, toast]);
 
   useEffect(() => {
     if (project) {
@@ -141,7 +123,6 @@ export default function ProjectSettings() {
           <TabsTrigger value="general">General</TabsTrigger>
           <TabsTrigger value="members">Members</TabsTrigger>
           <TabsTrigger value="permissions">Permissions</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="space-y-4 mt-4">
@@ -247,45 +228,6 @@ export default function ProjectSettings() {
                 ))}
               </tbody>
             </table>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="integrations" className="mt-4 space-y-6">
-          {!canManageIntegrations && (
-            <p className="text-sm text-muted-foreground">You need Manage project permission to connect or disconnect integrations.</p>
-          )}
-          <div className="rounded-md border border-dashed p-4 space-y-2 opacity-80">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-medium text-sm flex items-center gap-2">
-                  GitHub
-                  <Badge variant="outline" className="text-[10px] font-normal">
-                    Coming soon
-                  </Badge>
-                </p>
-                <p className="text-xs text-muted-foreground">OAuth, webhooks, and repository signals.</p>
-              </div>
-              <Button size="sm" variant="ghost" disabled>
-                Connect (soon)
-              </Button>
-            </div>
-          </div>
-
-          <div className="rounded-md border border-dashed p-4 space-y-2 opacity-80">
-            <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-medium text-sm flex items-center gap-2">
-                  Slack
-                  <Badge variant="outline" className="text-[10px] font-normal">
-                    Coming soon
-                  </Badge>
-                </p>
-                <p className="text-xs text-muted-foreground">Issue notifications and channel digests via Slack will ship in a future release.</p>
-              </div>
-              <Button size="sm" variant="ghost" disabled>
-                Connect (soon)
-              </Button>
-            </div>
           </div>
         </TabsContent>
       </Tabs>
