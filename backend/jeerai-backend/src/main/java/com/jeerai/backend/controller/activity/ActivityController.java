@@ -1,14 +1,13 @@
 package com.jeerai.backend.controller.activity;
-import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.jeerai.backend.dto.ActivityFromIssueUpdateRequest;
+import com.jeerai.backend.dto.ActivityPageResponse;
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.service.activity.ActivityService;
 @RestController
@@ -19,12 +18,11 @@ public class ActivityController {
         this.activityService = activityService;
     }
     @GetMapping
-    public List<Activity> getAll(@RequestParam(required = false) String projectId) {
-        return projectId == null ? activityService.getAll() : activityService.getByProject(projectId);
-    }
-    @GetMapping("/project/{projectId}")
-    public List<Activity> getByProject(@PathVariable String projectId) {
-        return activityService.getByProject(projectId);
+    public ActivityPageResponse getPage(
+            @RequestParam(required = false) String projectId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return activityService.getPage(projectId, page, size);
     }
     @PostMapping(consumes = MediaType.APPLICATION_JSON_VALUE)
     public Activity add(@RequestBody Activity activity) {

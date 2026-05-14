@@ -1,8 +1,10 @@
 package com.jeerai.backend.service.activity;
 import java.time.Instant;
+import java.util.Comparator;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import com.jeerai.backend.dto.ActivityFromIssueUpdateRequest;
+import com.jeerai.backend.dto.ActivityPageResponse;
 import com.jeerai.backend.model.Activity;
 import com.jeerai.backend.model.Issue;
 import com.jeerai.backend.model.User;
@@ -14,6 +16,8 @@ import com.jeerai.backend.service.exception.ResourceNotFoundException;
 import com.jeerai.backend.service.workspace.WorkspaceAccessService;
 @Service
 public class ActivityService {
+    private static final int DEFAULT_PAGE_SIZE = 20;
+    public static final int MAX_PAGE_SIZE = 100;
     private final ActivityRepository activityRepository;
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
@@ -31,8 +35,9 @@ public class ActivityService {
         this.workspaceAccessService = workspaceAccessService;
         this.currentUserProvider = currentUserProvider;
     }
-    public List<Activity> getAll() {
-        return activityRepository.findAll().stream()
+    public ActivityPageResponse getPage(String projectId, int page, int size) {
+        List<Activity> accessible = (projectId == null || projectId.isBlank())
+                ? activityRepository.findAll().stream()
                 .filter(activity -> activity.getProjectId() != null)
                 .filter(activity -> {
                     try {
@@ -42,11 +47,34 @@ public class ActivityService {
                         return false;
                     }
                 })
+                .toList()
+                : getAccessibleProjectActivities(projectId);
+
+        List<Activity> sorted = accessible.stream()
+                .sorted(Comparator.comparing(Activity::getCreatedAt,
+                        Comparator.nullsLast(Comparator.reverseOrder())))
                 .toList();
-            }
+
+        int p = Math.max(0, page);
+        int sz = Math.min(MAX_PAGE_SIZE, Math.max(1, size <= 0 ? DEFAULT_PAGE_SIZE : size));
+        int total = sorted.size();
+        int from = Math.min(p * sz, total);
+        int to = Math.min(from + sz, total);
+        int totalPages = total == 0 ? 0 : (int) Math.ceil((double) total / sz);
+
+        return new ActivityPageResponse(
+                sorted.subList(from, to),
+                total,
+                totalPages,
+                p,
+                sz,
+                to >= total);
+    }
+    public List<Activity> getAll() {
+        return getPage(null, 0, MAX_PAGE_SIZE).getContent();
+    }
     public List<Activity> getByProject(String projectId) {
-        workspaceAccessService.requireProjectReadAccess(projectId);
-        return activityRepository.findByProjectId(projectId);
+        return getPage(projectId, 0, MAX_PAGE_SIZE).getContent();
     }
     public Activity add(Activity activity) {
         workspaceAccessService.requireProjectIssueWriteAccess(activity.getProjectId());
@@ -94,5 +122,9 @@ public class ActivityService {
                 Instant.now(),
                 issue.getProjectId());
         return activityRepository.save(activity);
+    }
+    private List<Activity> getAccessibleProjectActivities(String projectId) {
+        workspaceAccessService.requireProjectReadAccess(projectId);
+        return activityRepository.findByProjectId(projectId);
     }
 }
