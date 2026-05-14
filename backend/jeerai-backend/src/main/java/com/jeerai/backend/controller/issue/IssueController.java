@@ -1,4 +1,4 @@
-package com.jeerai.backend.controller;
+package com.jeerai.backend.controller.issue;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

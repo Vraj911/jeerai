@@ -1,4 +1,4 @@
-package com.jeerai.backend.controller;
+package com.jeerai.backend.controller.exception;
 import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;

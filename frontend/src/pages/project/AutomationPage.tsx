@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { Badge } from '@/components/ui/badge';
@@ -82,6 +82,28 @@ function normalizeTriggerValueForState(type: TriggerType, value: string) {
 function normalizeActionValueForState(type: ActionType, value: string) {
   return type === 'send_notification' ? value || EMPTY_ACTION_VALUE : value;
 }
+function getConditionValueOptions(type: ConditionType, users: User[]) {
+  if (type === 'status_is') return STATUS_OPTIONS;
+  if (type === 'priority_is') return PRIORITY_OPTIONS;
+  if (type === 'assignee_is') return users.map((u) => ({ value: u.id, label: u.name }));
+  return [];
+}
+function normalizeConditionValueForState(type: ConditionType, value: string, users: User[]) {
+  if (type === 'label_contains') return value ?? '';
+  const options = getConditionValueOptions(type, users);
+  if (options.length === 0) return '';
+  if (options.some((option) => option.value === value)) return value;
+  return options[0]?.value ?? '';
+}
+function normalizeConditionsForState(
+  nextConditions: Array<{ type: ConditionType; value: string }>,
+  users: User[]
+) {
+  return nextConditions.map((condition) => ({
+    ...condition,
+    value: normalizeConditionValueForState(condition.type, condition.value, users),
+  }));
+}
 function normalizeTriggerValueForPayload(value: string) {
   return value === EMPTY_TRIGGER_VALUE ? '' : value;
 }
@@ -106,7 +128,7 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
     normalizeTriggerValueForState((editRule?.trigger.type as TriggerType) ?? 'issue_created', editRule?.trigger.value ?? '')
   );
   const [conditions, setConditions] = useState<Array<{ type: ConditionType; value: string }>>(
-    editRule?.conditions ?? []
+    normalizeConditionsForState(editRule?.conditions ?? [], users)
   );
   const [actionType, setActionType] = useState<ActionType>(
     (editRule?.action.type as ActionType) ?? 'change_status'
@@ -127,9 +149,21 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
     return [{ value: EMPTY_ACTION_VALUE, label: 'No extra value' }];
   };
 
+  useEffect(() => {
+    const nextTriggerType = (editRule?.trigger.type as TriggerType) ?? 'issue_created';
+    const nextActionType = (editRule?.action.type as ActionType) ?? 'change_status';
+    setName(editRule?.name ?? '');
+    setTriggerType(nextTriggerType);
+    setTriggerValue(normalizeTriggerValueForState(nextTriggerType, editRule?.trigger.value ?? ''));
+    setConditions(normalizeConditionsForState(editRule?.conditions ?? [], users));
+    setActionType(nextActionType);
+    setActionValue(normalizeActionValueForState(nextActionType, editRule?.action.value ?? ''));
+  }, [editRule, users]);
+
   const isMissingRequiredValues = () => {
     if (!name.trim()) return true;
     if (actionType === 'add_label' && !actionValue.trim()) return true;
+    if (conditions.some((c) => c.type !== 'label_contains' && !c.value.trim())) return true;
     if (conditions.some((c) => c.type === 'label_contains' && !c.value.trim())) return true;
     return false;
   };
@@ -190,13 +224,35 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider">IF</div>
-          <Button type="button" variant="ghost" size="sm" onClick={() => setConditions((p) => [...p, { type: 'status_is', value: 'todo' }])}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              setConditions((p) => [
+                ...p,
+                { type: 'status_is', value: normalizeConditionValueForState('status_is', '', users) },
+              ])
+            }>
             <Plus className="h-3.5 w-3.5 mr-1" />Add condition
           </Button>
         </div>
         {conditions.map((cond, i) => (
           <div key={i} className="flex gap-2 items-center">
-            <Select value={cond.type} onValueChange={(v) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, type: v as ConditionType } : c))}>
+            <Select
+              value={cond.type}
+              onValueChange={(v) =>
+                setConditions((p) =>
+                  p.map((c, idx) =>
+                    idx === i
+                      ? {
+                          type: v as ConditionType,
+                          value: normalizeConditionValueForState(v as ConditionType, '', users),
+                        }
+                      : c
+                  )
+                )
+              }>
               <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
               <SelectContent>{CONDITION_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectContent>
             </Select>
@@ -208,12 +264,14 @@ function RuleBuilder({ projectId, onClose, editRule, users }: RuleBuilderProps) 
                 className="w-32 h-9"
               />
             ) : (
-              <Select value={cond.value} onValueChange={(v) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, value: v } : c))}>
+              <Select
+                value={normalizeConditionValueForState(cond.type, cond.value, users)}
+                onValueChange={(v) => setConditions((p) => p.map((c, idx) => idx === i ? { ...c, value: v } : c))}>
                 <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {cond.type === 'status_is' && STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  {cond.type === 'priority_is' && PRIORITY_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-                  {cond.type === 'assignee_is' && users.map((u) => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+                  {getConditionValueOptions(cond.type, users).map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             )}

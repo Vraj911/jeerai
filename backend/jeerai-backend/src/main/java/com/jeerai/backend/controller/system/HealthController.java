@@ -1,4 +1,4 @@
-package com.jeerai.backend.controller;
+package com.jeerai.backend.controller.system;
 import java.time.Instant;
 import java.util.Map;
 import org.springframework.http.MediaType;

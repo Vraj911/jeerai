@@ -1,4 +1,4 @@
-package com.jeerai.backend.controller;
+package com.jeerai.backend.controller.workspace;
 import java.util.List;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;

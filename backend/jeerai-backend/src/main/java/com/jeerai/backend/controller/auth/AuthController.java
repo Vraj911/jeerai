@@ -1,4 +1,4 @@
-package com.jeerai.backend.controller;
+package com.jeerai.backend.controller.auth;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
