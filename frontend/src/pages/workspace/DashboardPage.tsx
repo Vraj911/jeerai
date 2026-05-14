@@ -15,12 +15,12 @@ export default function DashboardPage() {
   const currentWorkspace = useSessionStore((state) => state.currentWorkspace);
   const { data: projects = [] } = useProjects();
   const { data: issues = [] } = useIssues();
-  const { data: activities = [] } = useActivities();
+  const { data: activityPage } = useActivities();
   const { data: dashboardAccess } = useWorkspaceDashboardAccess(currentWorkspace?.id);
   const assignedIssues = issues.filter(
     (i) => i.assignee?.id === currentUser?.id && i.status !== 'done'
   );
-  const recentActivities = activities.slice(0, 5);
+  const recentActivities = (activityPage?.content ?? []).slice(0, 5);
   if (!currentWorkspace) {
     return (
       <PageContainer title="Dashboard">

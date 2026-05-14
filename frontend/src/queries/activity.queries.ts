@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { activityApi } from '@/api/activity.api';
-export function useActivities() {
+export function useActivities(page = 0, size = 20) {
   return useQuery({
-    queryKey: ['activities'],
-    queryFn: () => activityApi.getAll(),
+    queryKey: ['activities', page, size],
+    queryFn: () => activityApi.getPage(page, size),
   });
 }
 export function useProjectActivities(projectId: string) {
