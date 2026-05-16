@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageContainer } from '@/components/layout/PageContainer';
-import { ProjectCard } from '@/features/projects/components/ProjectCard';
-import { ProjectCreateModal } from '@/features/projects/components/ProjectCreateModal';
+import { ProjectCard } from '@/components/projects/ProjectCard';
+import { ProjectCreateModal } from '@/components/projects/ProjectCreateModal';
 import { ROUTES } from '@/routes/routeConstants';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

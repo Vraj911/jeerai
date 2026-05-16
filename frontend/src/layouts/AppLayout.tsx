@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Topbar } from '@/components/layout/Topbar';
 import { CommandPalette } from '@/components/layout/CommandPalette';
-import { IssueCreateModal } from '@/features/issues/components/IssueCreateModal';
+import { IssueCreateModal } from '@/components/issues/IssueCreateModal';
 import { useUIStore } from '@/store/ui.store';
 import { useCommandStore } from '@/store/command.store';
 import { ROUTES } from '@/routes/routeConstants';

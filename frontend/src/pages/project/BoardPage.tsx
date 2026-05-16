@@ -5,8 +5,8 @@ import {
   useUpdateIssueStatus,
   useUpdateIssue,
 } from '@/queries/issue.queries';
-import { IssueCard } from '@/features/issues/components/IssueCard';
-import { IssueCreateModal } from '@/features/issues/components/IssueCreateModal';
+import { IssueCard } from '@/components/issues/IssueCard';
+import { IssueCreateModal } from '@/components/issues/IssueCreateModal';
 import { PageContainer } from '@/components/layout/PageContainer';
 import { STATUS_LABELS } from '@/lib/constants';
 import { ROUTES } from '@/routes/routeConstants';
