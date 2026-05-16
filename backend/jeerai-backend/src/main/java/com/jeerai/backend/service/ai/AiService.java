@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @Slf4j
 public class AiService {
+
     private final ChatClient chatClient;
     private final AiContextService aiContextService;
     private final AiPromptBuilder aiPromptBuilder;
@@ -51,11 +52,13 @@ public class AiService {
         try {
             workspaceAccessService.requireProjectReadAccess(request.getProjectId());
         } catch (Exception e) {
-            return errorResponse("You do not have access to this project.", AiErrorCode.ACCESS_DENIED, request.getMode());
+            return errorResponse("You do not have access to this project.",
+                    AiErrorCode.ACCESS_DENIED, request.getMode());
         }
 
         if (!aiEnabled || apiKey == null || apiKey.isBlank() || isPlaceholderApiKey(apiKey)) {
-            return errorResponse("AI is not configured. Contact your admin.", AiErrorCode.MISSING_CONFIG, request.getMode());
+            return errorResponse("AI is not configured. Contact your admin.",
+                    AiErrorCode.MISSING_CONFIG, request.getMode());
         }
 
         Object context;
@@ -65,9 +68,17 @@ public class AiService {
             return errorResponse("Invalid AI mode.", AiErrorCode.INVALID_MODE, request.getMode());
         }
 
-        AiPromptBundle bundle = aiPromptBuilder.build(request.getMode(), request.getMessage(), context);
-        String rawContent;
+        // FIX: Pass conversation history to prompt builder so LLM has session memory.
+        // Previously history was accepted in the DTO but AiPromptBuilder.build()
+        // was called without it — every message was completely stateless.
+        AiPromptBundle bundle = aiPromptBuilder.build(
+                request.getMode(),
+                request.getMessage(),
+                context,
+                request.getHistory()   // ← was missing, causing stateless LLM calls
+        );
 
+        String rawContent;
         try {
             rawContent = chatClient.prompt(bundle.prompt()).call().content();
         } catch (Exception e) {
@@ -82,15 +93,15 @@ public class AiService {
                     code = AiErrorCode.MISSING_CONFIG;
                     reply = "AI is not configured or the API key is invalid.";
                 } else if (status == 429) {
-                    code = AiErrorCode.PROVIDER_UNAVAILABLE;
                     reply = "AI provider rate-limited the request. Please try again later.";
                 }
             } else if (e instanceof UnknownContentTypeException ucte) {
-                // OpenRouter sometimes returns HTML error pages (text/html) instead of JSON.
+                // OpenRouter sometimes returns HTML error pages instead of JSON
                 String bodyPreview;
                 try {
                     String body = ucte.getResponseBodyAsString();
-                    bodyPreview = body == null ? "<empty>" : body.substring(0, Math.min(300, body.length()));
+                    bodyPreview = body == null ? "<empty>"
+                            : body.substring(0, Math.min(300, body.length()));
                 } catch (Exception ignored) {
                     bodyPreview = "<unavailable>";
                 }
@@ -104,15 +115,19 @@ public class AiService {
         try {
             return aiResponseMapper.map(request.getMode(), rawContent, bundle.converter());
         } catch (Exception e) {
-            log.warn("Failed to parse AI output for mode {}. Raw content: {}", request.getMode(), rawContent);
-            return errorResponse("I had trouble structuring my response. Please try again.",
+            log.warn("Failed to parse AI output for mode {}. Raw content: {}",
+                    request.getMode(), rawContent);
+            return errorResponse(
+                    "I had trouble structuring my response. Please try again.",
                     AiErrorCode.PARSE_FAILED, request.getMode());
         }
     }
 
     private boolean isPlaceholderApiKey(String key) {
         String k = key.trim();
-        return k.equals("dummy-for-startup") || k.contains("YOUR_OPENROUTER") || k.contains("sk-or-YOUR");
+        return k.equals("dummy-for-startup")
+                || k.contains("YOUR_OPENROUTER")
+                || k.contains("sk-or-YOUR");
     }
 
     private AiMessageResponse errorResponse(String reply, AiErrorCode code, String mode) {
