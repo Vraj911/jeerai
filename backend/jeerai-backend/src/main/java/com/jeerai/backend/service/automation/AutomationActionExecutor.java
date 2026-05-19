@@ -21,12 +21,10 @@ import com.jeerai.backend.repository.user.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class AutomationActionExecutor {
-
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
     private final ActivityRepository activityRepository;
@@ -36,14 +34,12 @@ public class AutomationActionExecutor {
         if (rule.getAction() == null || rule.getAction().getType() == null) {
             return;
         }
-
         User systemActor = userRepository.findById(WellKnownUsers.AUTOMATION_ACTOR_PUBLIC_ID)
                 .orElse(null);
         if (systemActor == null) {
             log.error("System automation user not found — ensure SystemUsersInitializer ran on startup");
             return;
         }
-
         String type = rule.getAction().getType().toLowerCase(Locale.ROOT);
         switch (type) {
             case "change_status"     -> changeStatus(rule, issue, projectId, systemActor);

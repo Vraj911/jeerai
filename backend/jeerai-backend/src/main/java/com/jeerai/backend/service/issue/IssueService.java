@@ -89,7 +89,6 @@ public class IssueService {
         workspaceAccessService.requireProjectReadAccess(issue.getProjectId());
         return issue;
     }
-    // FIX: removed hardcoded "proj-1" fallback — projectId is now required
     @Transactional
     public Issue create(IssueCreateRequest data) {
         if (data.getProjectId() == null || data.getProjectId().isBlank()) {

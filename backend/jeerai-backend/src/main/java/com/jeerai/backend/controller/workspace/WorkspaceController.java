@@ -32,7 +32,6 @@ public class WorkspaceController {
     public List<WorkspaceDto> getUserWorkspaces() {
         return workspaceService.listUserWorkspaces();
     }
-
     @GetMapping("/owned")
     public List<WorkspaceDto> getOwnedWorkspaces() {
         return workspaceService.listOwnedWorkspaces();

@@ -61,7 +61,6 @@ public class JwtUtil {
     }
     private byte[] decodeKeyMaterial(String value) {
         byte[] rawBytes = value.getBytes(StandardCharsets.UTF_8);
-        // Only accept decoded Base64 variants when they produce a strong enough key.
         byte[] base64Bytes = tryDecode(Decoders.BASE64, value);
         if (base64Bytes != null && base64Bytes.length >= 32) {
             return base64Bytes;

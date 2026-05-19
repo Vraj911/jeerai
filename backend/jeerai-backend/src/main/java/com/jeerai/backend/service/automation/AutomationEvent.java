@@ -1,5 +1,4 @@
 package com.jeerai.backend.service.automation;
-
 import java.time.Instant;
 import java.util.List;
 import org.springframework.context.ApplicationEvent;

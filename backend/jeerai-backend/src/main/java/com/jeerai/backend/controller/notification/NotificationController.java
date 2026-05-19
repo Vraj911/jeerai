@@ -1,7 +1,5 @@
 package com.jeerai.backend.controller.notification;
-
 import java.util.List;
-
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +14,6 @@ import com.jeerai.backend.service.notification.NotificationService;
 @RequestMapping(path = "/api/notifications", produces = MediaType.APPLICATION_JSON_VALUE)
 public class NotificationController {
     private final NotificationService notificationService;
-
     public NotificationController(NotificationService notificationService) {
         this.notificationService = notificationService;
     }

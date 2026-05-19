@@ -1,11 +1,8 @@
 package com.jeerai.backend.service.workspace;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.dto.CreateWorkspaceRequest;
 import com.jeerai.backend.dto.DashboardAccessDto;
 import com.jeerai.backend.dto.OnboardingStatusDto;
@@ -20,7 +17,6 @@ import com.jeerai.backend.security.CurrentUserProvider;
 import com.jeerai.backend.service.exception.BadRequestException;
 import com.jeerai.backend.service.exception.ResourceNotFoundException;
 import com.jeerai.backend.service.user.UserService;
-
 @Service
 public class WorkspaceService {
     private final WorkspaceRepository workspaceRepository;
@@ -28,7 +24,6 @@ public class WorkspaceService {
     private final UserService userService;
     private final ProjectRepository projectRepository;
     private final CurrentUserProvider currentUserProvider;
-
     public WorkspaceService(
             WorkspaceRepository workspaceRepository,
             WorkspaceMemberService workspaceMemberService,
@@ -41,10 +36,8 @@ public class WorkspaceService {
         this.projectRepository = projectRepository;
         this.currentUserProvider = currentUserProvider;
     }
-
     public WorkspaceDto createWorkspace(CreateWorkspaceRequest request) {
         User owner = userService.getById(currentUserProvider.getCurrentUserId());
-
         String normalizedName = request.getName().trim();
         boolean nameExistsForOwner = workspaceRepository.findAll().stream()
                 .anyMatch(workspace -> owner.getId().equals(workspace.getOwnerId())
@@ -53,7 +46,6 @@ public class WorkspaceService {
         if (nameExistsForOwner) {
             throw new BadRequestException("You already have a workspace with this name");
         }
-
         Workspace workspace = workspaceRepository.save(new Workspace(
                 UUID.randomUUID().toString(),
                 normalizedName,
@@ -62,18 +54,15 @@ public class WorkspaceService {
         workspaceMemberService.addMember(workspace.getId(), owner.getId(), WorkspaceRole.OWNER);
         return toDto(workspace, WorkspaceRole.OWNER);
     }
-
     public WorkspaceDto getWorkspace(String workspaceId) {
         WorkspaceMember membership = workspaceMemberService.requireCurrentMembership(workspaceId);
         return toDto(getWorkspaceModel(workspaceId), membership.getRole());
     }
-
     public List<WorkspaceDto> listUserWorkspaces() {
         return workspaceMemberService.getMembershipsForCurrentUser().stream()
                 .map(membership -> toDto(getWorkspaceModel(membership.getWorkspaceId()), membership.getRole()))
                 .toList();
     }
-
     public List<WorkspaceDto> listOwnedWorkspaces() {
         String currentUserId = currentUserProvider.getCurrentUserId();
         return workspaceRepository.findAll().stream()
@@ -81,17 +70,14 @@ public class WorkspaceService {
                 .map(workspace -> toDto(workspace, WorkspaceRole.OWNER))
                 .toList();
     }
-
     public void validateMembership(String workspaceId) {
         workspaceMemberService.requireCurrentMembership(workspaceId);
     }
-
     public OnboardingStatusDto getOnboardingStatus() {
         String currentUserId = currentUserProvider.getCurrentUserId();
         List<WorkspaceDto> workspaces = listUserWorkspaces();
         return new OnboardingStatusDto(currentUserId, workspaces.isEmpty(), workspaces.size(), workspaces);
     }
-
     public DashboardAccessDto getDashboardAccess(String workspaceId) {
         String currentUserId = currentUserProvider.getCurrentUserId();
         List<WorkspaceDto> workspaces = listUserWorkspaces();
@@ -108,12 +94,10 @@ public class WorkspaceService {
                 !hasWorkspace,
                 reason);
     }
-
     public Workspace getWorkspaceModel(String workspaceId) {
         return workspaceRepository.findById(workspaceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace not found"));
     }
-
     public void attachProjectsToWorkspaceIfUnassigned(String workspaceId) {
         projectRepository.findAll().forEach(project -> {
             if (project.getWorkspaceId() == null) {
@@ -122,7 +106,6 @@ public class WorkspaceService {
             }
         });
     }
-
     private WorkspaceDto toDto(Workspace workspace, WorkspaceRole role) {
         return new WorkspaceDto(
                 workspace.getId(),

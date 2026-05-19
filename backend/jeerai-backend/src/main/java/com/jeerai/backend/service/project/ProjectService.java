@@ -102,23 +102,19 @@ public class ProjectService {
         Project saved = projectRepository.save(project);
         return toDto(saved);
     }
-
     public ProjectPermissionsDto getPermissions(String projectId) {
         workspaceAccessService.requireProjectReadAccess(projectId);
         return projectPermissionService.getPermissions(projectId);
     }
-
     public ProjectPermissionsDto updatePermissions(String projectId, ProjectPermissionsDto permissions) {
         workspaceAccessService.requireWorkspaceAdminAccess(getWorkspaceId(projectId));
         return projectPermissionService.updatePermissions(projectId, permissions);
     }
-
     private void ensureManageProjectAccess(String projectId) {
         if (!workspaceAccessService.canCurrentUser(projectId, ProjectPermissionKey.MANAGE_PROJECT)) {
             throw new AccessDeniedException("You do not have permission to manage this project");
         }
     }
-
     private String getWorkspaceId(String projectId) {
         return projectRepository.findById(projectId)
                 .map(Project::getWorkspaceId)

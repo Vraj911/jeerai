@@ -1,5 +1,4 @@
 package com.jeerai.backend.config;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -42,7 +41,6 @@ public class SecurityConfig {
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
-
     @Bean
     PrivateNetworkAccessFilter privateNetworkAccessFilter() {
         return new PrivateNetworkAccessFilter();

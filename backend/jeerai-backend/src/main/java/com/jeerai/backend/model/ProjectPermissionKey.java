@@ -1,5 +1,4 @@
 package com.jeerai.backend.model;
-
 public enum ProjectPermissionKey {
     CREATE_ISSUES,
     EDIT_ISSUES,

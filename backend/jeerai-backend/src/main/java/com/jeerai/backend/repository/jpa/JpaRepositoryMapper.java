@@ -1,12 +1,9 @@
 package com.jeerai.backend.repository.jpa;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-
 import com.jeerai.backend.entity.ActivityEntity;
 import com.jeerai.backend.entity.AutomationRuleEntity;
 import com.jeerai.backend.entity.IssueCommentEntity;

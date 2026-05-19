@@ -1,10 +1,7 @@
 package com.jeerai.backend.service.workspace;
-
 import java.util.Set;
 import java.util.stream.Collectors;
-
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.model.Project;
 import com.jeerai.backend.model.ProjectPermissionKey;
 import com.jeerai.backend.model.WorkspaceMember;
@@ -14,15 +11,12 @@ import com.jeerai.backend.service.exception.AccessDeniedException;
 import com.jeerai.backend.service.exception.BadRequestException;
 import com.jeerai.backend.service.exception.ResourceNotFoundException;
 import com.jeerai.backend.service.project.ProjectPermissionService;
-
 @Service
 public class WorkspaceAccessService {
-
     private final WorkspaceMemberService workspaceMemberService;
     private final ProjectRepository projectRepository;
     private final CurrentUserProvider currentUserProvider;
     private final ProjectPermissionService projectPermissionService;
-
     public WorkspaceAccessService(
             WorkspaceMemberService workspaceMemberService,
             ProjectRepository projectRepository,
@@ -33,24 +27,19 @@ public class WorkspaceAccessService {
         this.currentUserProvider = currentUserProvider;
         this.projectPermissionService = projectPermissionService;
     }
-
     public WorkspaceMember requireWorkspaceReadAccess(String workspaceId) {
         return workspaceMemberService.requireMembership(workspaceId, currentUserProvider.getCurrentUserId());
     }
-
     public WorkspaceMember requireWorkspaceAdminAccess(String workspaceId) {
         return workspaceMemberService.checkAdminAccess(workspaceId, currentUserProvider.getCurrentUserId());
     }
-
     public WorkspaceMember requireWorkspaceOwnerAccess(String workspaceId) {
         return workspaceMemberService.checkOwnerAccess(workspaceId, currentUserProvider.getCurrentUserId());
     }
-
     public WorkspaceMember requireProjectReadAccess(String projectId) {
         Project project = getProject(projectId);
         return requireWorkspaceReadAccess(requireWorkspaceId(project));
     }
-
     public WorkspaceMember requireProjectIssueWriteAccess(String projectId) {
         Project project = getProject(projectId);
         WorkspaceMember membership = requireWorkspaceReadAccess(requireWorkspaceId(project));
@@ -60,29 +49,24 @@ public class WorkspaceAccessService {
         }
         return membership;
     }
-
     public WorkspaceMember requireProjectAdminAccess(String projectId) {
         Project project = getProject(projectId);
         return requireWorkspaceAdminAccess(requireWorkspaceId(project));
     }
-
     public Set<String> getAccessibleWorkspaceIds() {
         return workspaceMemberService.getMembershipsForCurrentUser().stream()
                 .map(WorkspaceMember::getWorkspaceId)
                 .collect(Collectors.toSet());
     }
-
     public boolean canCurrentUser(String projectId, ProjectPermissionKey permission) {
         Project project = getProject(projectId);
         WorkspaceMember membership = requireWorkspaceReadAccess(requireWorkspaceId(project));
         return projectPermissionService.isAllowed(projectId, membership.getRole(), permission);
     }
-
     private Project getProject(String projectId) {
         return projectRepository.findById(projectId)
                 .orElseThrow(() -> new ResourceNotFoundException("Project not found"));
     }
-
     private String requireWorkspaceId(Project project) {
         if (project.getWorkspaceId() == null || project.getWorkspaceId().isBlank()) {
             throw new BadRequestException("Project is not attached to a workspace");

@@ -1,32 +1,24 @@
 package com.jeerai.backend.service.notification;
-
 import java.util.List;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.dto.NotificationPageResponse;
 import com.jeerai.backend.model.AppNotification;
 import com.jeerai.backend.repository.notification.NotificationRepository;
 import com.jeerai.backend.security.CurrentUserProvider;
 import com.jeerai.backend.service.exception.ResourceNotFoundException;
-
 @Service
 public class NotificationService {
-
     private static final int DEFAULT_PAGE_SIZE = 20;
     public static final int MAX_PAGE_SIZE = 100;
-
     private final NotificationRepository notificationRepository;
     private final CurrentUserProvider currentUserProvider;
-
     public NotificationService(NotificationRepository notificationRepository, CurrentUserProvider currentUserProvider) {
         this.notificationRepository = notificationRepository;
         this.currentUserProvider = currentUserProvider;
     }
-
     public NotificationPageResponse getPage(int page, int size) {
         String userId = currentUserProvider.getCurrentUserId();
         int p = Math.max(0, page);
@@ -41,7 +33,6 @@ public class NotificationService {
                 result.getSize(),
                 result.isLast());
     }
-
     public AppNotification markRead(String id) {
         String userId = currentUserProvider.getCurrentUserId();
         AppNotification notification = notificationRepository.findByIdAndRecipientUserId(id, userId)

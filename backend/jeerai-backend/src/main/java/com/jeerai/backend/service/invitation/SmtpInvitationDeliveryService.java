@@ -1,5 +1,4 @@
 package com.jeerai.backend.service.invitation;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -8,20 +7,16 @@ import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.model.Invitation;
 import com.jeerai.backend.model.Workspace;
 import com.jeerai.backend.service.exception.EmailDeliveryException;
-
 @Service
 @ConditionalOnProperty(prefix = "app.mail", name = "enabled", havingValue = "true")
 public class SmtpInvitationDeliveryService implements InvitationDeliveryService {
     private static final Logger log = LoggerFactory.getLogger(SmtpInvitationDeliveryService.class);
-
     private final JavaMailSender mailSender;
     private final String fromAddress;
     private final String smtpPassword;
-
     public SmtpInvitationDeliveryService(
             JavaMailSender mailSender,
             @Value("${app.mail.from}") String fromAddress,
@@ -30,7 +25,6 @@ public class SmtpInvitationDeliveryService implements InvitationDeliveryService 
         this.fromAddress = fromAddress;
         this.smtpPassword = smtpPassword;
     }
-
     @Override
     public void sendWorkspaceInvitation(Invitation invitation, Workspace workspace, String inviteLink) {
         if (isPlaceholderPassword(smtpPassword)) {
@@ -40,7 +34,6 @@ public class SmtpInvitationDeliveryService implements InvitationDeliveryService 
                     invitation.getEmail());
             return;
         }
-
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(fromAddress);
         message.setTo(invitation.getEmail());
@@ -55,7 +48,6 @@ public class SmtpInvitationDeliveryService implements InvitationDeliveryService 
                     ex);
         }
     }
-
     private boolean isPlaceholderPassword(String password) {
         if (password == null) {
             return true;
@@ -69,7 +61,6 @@ public class SmtpInvitationDeliveryService implements InvitationDeliveryService 
                 || trimmed.toLowerCase().contains("mock")
                 || trimmed.toLowerCase().contains("placeholder");
     }
-
     private String buildBody(Invitation invitation, Workspace workspace, String inviteLink) {
         return """
                 You have been invited to join the workspace \"%s\" on Jeerai.

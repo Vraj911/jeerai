@@ -1,11 +1,8 @@
 package com.jeerai.backend.service.workspace;
-
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
-
 import org.springframework.stereotype.Service;
-
 import com.jeerai.backend.dto.UpdateWorkspaceMemberRoleRequest;
 import com.jeerai.backend.dto.UserDto;
 import com.jeerai.backend.dto.WorkspaceMemberDto;
@@ -18,13 +15,11 @@ import com.jeerai.backend.service.exception.AccessDeniedException;
 import com.jeerai.backend.service.exception.BadRequestException;
 import com.jeerai.backend.service.exception.ResourceNotFoundException;
 import com.jeerai.backend.service.user.UserService;
-
 @Service
 public class WorkspaceMemberService {
     private final WorkspaceMemberRepository workspaceMemberRepository;
     private final UserService userService;
     private final CurrentUserProvider currentUserProvider;
-
     public WorkspaceMemberService(
             WorkspaceMemberRepository workspaceMemberRepository,
             UserService userService,
@@ -33,7 +28,6 @@ public class WorkspaceMemberService {
         this.userService = userService;
         this.currentUserProvider = currentUserProvider;
     }
-
     public WorkspaceMember addMember(String workspaceId, String userId, WorkspaceRole role) {
         return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseGet(() -> workspaceMemberRepository.save(
@@ -44,29 +38,23 @@ public class WorkspaceMemberService {
                                 role,
                                 Instant.now())));
     }
-
     public List<WorkspaceMemberDto> getMembers(String workspaceId) {
         return workspaceMemberRepository.findByWorkspaceId(workspaceId).stream()
                 .map(this::toDto)
                 .toList();
     }
-
     public WorkspaceMember requireMembership(String workspaceId, String userId) {
         return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
                 .orElseThrow(() -> new AccessDeniedException("User is not a member of this workspace"));
     }
-
     public WorkspaceMember requireCurrentMembership(String workspaceId) {
         return requireMembership(workspaceId, currentUserProvider.getCurrentUserId());
     }
-
     public boolean isWorkspaceMember(String workspaceId, String userId) {
         return workspaceMemberRepository.findByWorkspaceIdAndUserId(workspaceId, userId).isPresent();
     }
-
     public WorkspaceMemberDto updateRole(String workspaceId, String memberId, UpdateWorkspaceMemberRoleRequest request) {
         checkOwnerAccess(workspaceId, currentUserProvider.getCurrentUserId());
-
         WorkspaceMember member = workspaceMemberRepository.findById(memberId)
                 .orElseThrow(() -> new ResourceNotFoundException("Workspace member not found"));
         if (!workspaceId.equals(member.getWorkspaceId())) {
@@ -78,7 +66,6 @@ public class WorkspaceMemberService {
         member.setRole(request.getRole());
         return toDto(workspaceMemberRepository.save(member));
     }
-
     public void removeMember(String workspaceId, String memberId) {
         WorkspaceMember actor = requireCurrentMembership(workspaceId);
         WorkspaceMember member = workspaceMemberRepository.findById(memberId)
@@ -99,15 +86,12 @@ public class WorkspaceMemberService {
         }
         workspaceMemberRepository.deleteById(memberId);
     }
-
     public List<WorkspaceMember> getMembershipsForUser(String userId) {
         return workspaceMemberRepository.findByUserId(userId);
     }
-
     public List<WorkspaceMember> getMembershipsForCurrentUser() {
         return getMembershipsForUser(currentUserProvider.getCurrentUserId());
     }
-
     public WorkspaceMember checkAdminAccess(String workspaceId, String userId) {
         WorkspaceMember membership = requireMembership(workspaceId, userId);
         if (membership.getRole() != WorkspaceRole.OWNER && membership.getRole() != WorkspaceRole.ADMIN) {
@@ -115,7 +99,6 @@ public class WorkspaceMemberService {
         }
         return membership;
     }
-
     public WorkspaceMember checkOwnerAccess(String workspaceId, String userId) {
         WorkspaceMember membership = requireMembership(workspaceId, userId);
         if (membership.getRole() != WorkspaceRole.OWNER) {
@@ -123,7 +106,6 @@ public class WorkspaceMemberService {
         }
         return membership;
     }
-
     private WorkspaceMemberDto toDto(WorkspaceMember member) {
         User user = userService.getById(member.getUserId());
         return new WorkspaceMemberDto(

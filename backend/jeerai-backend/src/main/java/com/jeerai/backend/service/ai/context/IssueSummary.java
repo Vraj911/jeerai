@@ -1,7 +1,5 @@
 package com.jeerai.backend.service.ai.context;
-
 import java.util.List;
-
 public record IssueSummary(
         String key,
         String title,

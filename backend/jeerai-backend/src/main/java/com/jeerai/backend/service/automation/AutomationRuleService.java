@@ -27,9 +27,6 @@ public class AutomationRuleService {
         return automationRuleRepository.findByProjectId(projectId);
     }
     public AutomationRule create(AutomationRuleCreateRequest request) {
-        // FIX: validate required fields before saving
-        // Previously a rule with null trigger/action would be saved silently
-        // and would never fire — confusing and hard to debug.
         validateCreateRequest(request);
         ensureManageProjectAccess(request.getProjectId());
         AutomationRule rule = new AutomationRule(
@@ -41,7 +38,6 @@ public class AutomationRuleService {
                 request.getAction(),
                 request.isEnabled(),
                 Instant.now());
-
         return automationRuleRepository.save(rule);
     }
     public AutomationRule update(String id, AutomationRuleUpdateRequest updated) {
@@ -80,9 +76,6 @@ public class AutomationRuleService {
         rule.setEnabled(enabled);
         return automationRuleRepository.save(rule);
     }
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
     private void validateCreateRequest(AutomationRuleCreateRequest request) {
         if (request.getName() == null || request.getName().isBlank()) {
             throw new BadRequestException("Rule name is required");
@@ -103,7 +96,6 @@ public class AutomationRuleService {
         if (rv.getType() == null || rv.getType().isBlank()) {
             throw new BadRequestException("Automation rule " + field + " type is required");
         }
-        // action value is optional only for send_notification
         if ("action".equals(field)
                 && !"send_notification".equals(rv.getType())
                 && (rv.getValue() == null || rv.getValue().isBlank())) {

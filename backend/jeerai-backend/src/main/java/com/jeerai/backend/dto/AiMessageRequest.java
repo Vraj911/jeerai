@@ -1,24 +1,18 @@
 package com.jeerai.backend.dto;
-
 import java.util.List;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
-
 @Data
 public class AiMessageRequest {
-
     @NotBlank(message = "message is required")
     private String message;
-
     @NotBlank(message = "mode is required")
     @Pattern(
         regexp = "generate|summary|priorities",
         message = "mode must be generate, summary, or priorities"
     )
     private String mode;
-
     /**
      * FIX: Removed @NotBlank from workspaceId.
      *
@@ -32,10 +26,8 @@ public class AiMessageRequest {
      * for future workspace-level validation.
      */
     private String workspaceId;
-
     @NotBlank(message = "projectId is required")
     private String projectId;
-
     /**
      * Optional conversation history for multi-turn AI sessions.
      * Passed to AiPromptBuilder to give the LLM memory of previous messages.
