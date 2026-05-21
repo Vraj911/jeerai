@@ -16,7 +16,6 @@ export interface Activity {
   createdAt: string;
   projectId: string;
 }
-
 export interface ActivityPageResponse {
   content: Activity[];
   totalElements: number;

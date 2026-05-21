@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { useNotificationPages } from '@/queries/notification.queries';
 import { useNotificationStore } from '@/store/notification.store';
 import { useSessionStore } from '@/store/session.store';
-
 export function NotificationBootstrap() {
   const { data, isSuccess } = useNotificationPages();
   const flat = useMemo(
@@ -19,9 +18,7 @@ export function NotificationBootstrap() {
       replaceInboxFromServer([]);
       return;
     }
-
     if (!isSuccess) return;
-
     replaceInboxFromServer(flat);
   }, [flat, hasHydrated, isSuccess, replaceInboxFromServer, token]);
   return null;

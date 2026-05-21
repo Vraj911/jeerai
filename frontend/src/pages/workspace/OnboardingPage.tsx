@@ -8,11 +8,9 @@ import { useCreateWorkspace, useWorkspaceOnboarding } from '@/queries/workspace.
 import { useSessionStore } from '@/store/session.store';
 import { ROUTES } from '@/routes/routeConstants';
 import { getApiErrorMessage } from '@/api/apiError';
-
 function extractInviteToken(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return '';
-
   try {
     const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://placeholder.local${trimmed.startsWith('/') ? '' : '/'}${trimmed}`;
     const url = new URL(normalized);
@@ -24,7 +22,6 @@ function extractInviteToken(value: string) {
     return trimmed;
   }
 }
-
 export default function OnboardingPage() {
   const navigate = useNavigate();
   const currentUser = useSessionStore((state) => state.currentUser);
@@ -34,13 +31,11 @@ export default function OnboardingPage() {
   const [error, setError] = useState('');
   const createWorkspace = useCreateWorkspace();
   const { data: onboardingStatus, isLoading: onboardingLoading } = useWorkspaceOnboarding();
-
   useEffect(() => {
     if (!currentUser?.email) {
       navigate(ROUTES.AUTH.LOGIN, { replace: true });
     }
   }, [currentUser?.email, navigate]);
-
   useEffect(() => {
     if (onboardingLoading) return;
     if (onboardingStatus && !onboardingStatus.onboardingRequired) {
@@ -51,7 +46,6 @@ export default function OnboardingPage() {
   if (!currentUser?.email) {
     return null;
   }
-
   const handleCreateWorkspace = async (event: FormEvent) => {
     event.preventDefault();
     setError('');
@@ -65,7 +59,6 @@ export default function OnboardingPage() {
       setError(getApiErrorMessage(err, 'Workspace creation failed'));
     }
   };
-
   const handleOpenInvite = () => {
     const token = extractInviteToken(inviteLink);
     if (!token) return;

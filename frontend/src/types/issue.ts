@@ -16,7 +16,6 @@ export interface Issue {
   projectId: string;
   sprintId?: string;
 }
-
 export interface Comment {
   id: string;
   issueId: string;

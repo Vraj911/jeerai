@@ -19,9 +19,7 @@ export interface Sprint {
   endDate: string;
   isActive: boolean;
 }
-
 export type ProjectPermissionKey = 'CREATE_ISSUES' | 'EDIT_ISSUES' | 'DELETE_ISSUES' | 'MANAGE_PROJECT' | 'VIEW_ANALYTICS';
-
 export interface ProjectPermissions {
   projectId: string;
   permissions: Record<WorkspaceRole, Record<ProjectPermissionKey, boolean>>;

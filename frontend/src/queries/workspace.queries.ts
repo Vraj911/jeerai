@@ -9,7 +9,6 @@ export function useWorkspaces() {
     enabled: !!currentUser?.id,
   });
 }
-
 export function useOwnedWorkspaces() {
   const currentUser = useSessionStore((state) => state.currentUser);
   return useQuery({

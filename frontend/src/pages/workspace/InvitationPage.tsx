@@ -21,14 +21,12 @@ export default function InvitationPage() {
   const { data: invitation, isLoading, error } = useInviteValidation(token || undefined);
   const acceptInvitation = useAcceptInvitation();
   const requiresName = useMemo(() => !currentUser?.id, [currentUser?.id]);
-
   useEffect(() => {
     if (!token) return;
     if (!isLoading && invitation && !currentUser?.id && !invitation.userExists) {
       navigate(`${ROUTES.AUTH.SIGNUP}?token=${encodeURIComponent(token)}`, { replace: true });
     }
   }, [currentUser?.id, invitation, isLoading, navigate, token]);
-
   const handleAccept = async (event: FormEvent) => {
     event.preventDefault();
     const accepted = await acceptInvitation.mutateAsync({

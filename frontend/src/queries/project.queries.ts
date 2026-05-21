@@ -35,7 +35,6 @@ export function useUpdateProject() {
     },
   });
 }
-
 export function useProjectPermissions(id?: string) {
   return useQuery({
     queryKey: ['project-permissions', id],
@@ -43,7 +42,6 @@ export function useProjectPermissions(id?: string) {
     enabled: !!id,
   });
 }
-
 export function useUpdateProjectPermissions() {
   const qc = useQueryClient();
   return useMutation({

@@ -28,7 +28,6 @@ export default function SignupPage() {
   const { data: onboardingStatus } = useWorkspaceOnboarding();
   const inviteEmail = inviteValidation?.email ?? '';
   const emailLocked = !!inviteToken && !!inviteValidation?.email;
-
   useEffect(() => {
     if (!inviteToken) return;
     if (!inviteValidation) return;
@@ -38,14 +37,12 @@ export default function SignupPage() {
     }
     setEmail(inviteValidation.email);
   }, [inviteToken, inviteValidation, navigate]);
-
   useEffect(() => {
     if (!onboardingStatus || onboardingStatus.onboardingRequired) return;
     if (!inviteToken) {
       navigate(ROUTES.APP.DASHBOARD, { replace: true });
     }
   }, [inviteToken, navigate, onboardingStatus]);
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError('');

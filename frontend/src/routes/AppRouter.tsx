@@ -34,7 +34,6 @@ function PageLoader() {
     </div>
   );
 }
-
 export function AppRouter() {
   return (
     <Suspense fallback={<PageLoader />}>

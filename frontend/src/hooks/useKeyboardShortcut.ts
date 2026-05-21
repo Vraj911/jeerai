@@ -26,7 +26,6 @@ export function useKeyboardShortcut(
       if (meta && !event.metaKey) return;
       if (ctrl && !event.ctrlKey) return;
       if (shift && !event.shiftKey) return;
-
       if (event.key.toLowerCase() === key.toLowerCase()) {
         event.preventDefault();
         callback();

@@ -167,7 +167,6 @@ export function CommandPalette() {
             </CommandItem>
           ))}
         </CommandGroup>
-
         <CommandGroup heading="Actions">
           {filteredActions.map((item) => (
             <CommandItem key={item.id} value={item.value} onSelect={() => runCommand(item.execute)}>
