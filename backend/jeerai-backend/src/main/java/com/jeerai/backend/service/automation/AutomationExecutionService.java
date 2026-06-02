@@ -23,20 +23,6 @@ public class AutomationExecutionService {
     private final AutomationActionExecutor actionExecutor;
     @Value("${app.automation.max-depth:3}")
     private int maxDepth;
-    /**
-     * FIX: Added @Transactional(propagation = REQUIRES_NEW) alongside the
-     * @TransactionalEventListener.
-     *
-     * WHY: @TransactionalEventListener(AFTER_COMMIT) fires AFTER the publishing
-     * transaction has committed and is gone. Without REQUIRES_NEW, this method
-     * runs with NO active transaction. Every issueRepository.save() and
-     * activityRepository.save() inside AutomationActionExecutor would each open
-     * its own micro-transaction independently — meaning if one fails, others
-     * already committed cannot be rolled back together.
-     *
-     * REQUIRES_NEW: Opens a brand-new independent transaction for the entire
-     * automation execution chain, giving proper atomicity within automation.
-     */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void onAutomationEvent(AutomationEvent event) {
@@ -105,8 +91,6 @@ public class AutomationExecutionService {
                 if (!"status_change".equals(event.getEventType())) {
                     yield false;
                 }
-                // v is null/blank → fire on ANY status change
-                // v has a value → fire only if after-status matches (case-insensitive)
                 yield v == null || v.isBlank()
                         || (event.getAfter() != null
                                 && v.equalsIgnoreCase(event.getAfter().status()));

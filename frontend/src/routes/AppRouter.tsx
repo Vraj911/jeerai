@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 const LoginPage = lazy(() => import('@/pages/auth/LoginPage'));
 const SignupPage = lazy(() => import('@/pages/auth/SignupPage'));
-const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
 const OnboardingPage = lazy(() => import('@/pages/workspace/OnboardingPage'));
 const InvitationPage = lazy(() => import('@/pages/workspace/InvitationPage'));
 const DashboardPage = lazy(() => import('@/pages/workspace/DashboardPage'));
@@ -43,7 +42,6 @@ export function AppRouter() {
           <Route path="/auth" element={<AuthLayout />}>
             <Route path="login" element={<LoginPage />} />
             <Route path="signup" element={<SignupPage />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
           </Route>
           <Route path="/invite" element={<InvitationPage />} />
           <Route path="/invite/:token" element={<InvitationPage />} />

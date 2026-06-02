@@ -30,7 +30,6 @@ export default function IssueDetailPage() {
   const { data: comments } = useIssueComments(issueId ?? '');
   const { toast } = useToast();
   const [commentText, setCommentText] = useState('');
-
   if (isLoading || !issue) {
     return (
       <div className="p-6">
@@ -39,7 +38,6 @@ export default function IssueDetailPage() {
       </div>
     );
   }
-
   return (
     <div className="p-6 animate-fade-in">
       <button
@@ -49,12 +47,10 @@ export default function IssueDetailPage() {
         <ArrowLeft className="h-4 w-4" />
         Back
       </button>
-
       <div className="flex items-center gap-3 mb-6">
         <span className="font-mono text-sm text-muted-foreground">{issue.key}</span>
         <StatusIndicator status={issue.status} showLabel />
       </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-6">
           <h1 className="text-2xl font-semibold text-foreground">{issue.title}</h1>
@@ -65,7 +61,6 @@ export default function IssueDetailPage() {
               {issue.description || 'No description provided.'}
             </div>
           </div>
-
           <div>
             <h3 className="text-sm font-medium text-foreground mb-3">Comments</h3>
             <form
@@ -83,8 +78,7 @@ export default function IssueDetailPage() {
                     },
                   }
                 );
-              }}
-            >
+              }} >
               <Textarea
                 value={commentText}
                 onChange={(e) => setCommentText(e.target.value)}
@@ -117,7 +111,6 @@ export default function IssueDetailPage() {
             </div>
           </div>
         </div>
-
         <div className="space-y-4">
           <div className="rounded-md border p-4 space-y-4">
             <div>
@@ -126,8 +119,7 @@ export default function IssueDetailPage() {
                 value={issue.status}
                 onValueChange={(value) =>
                   updateIssue.mutate({ id: issue.id, data: { status: value as IssueStatus } })
-                }
-              >
+                } >
                 <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
@@ -140,15 +132,13 @@ export default function IssueDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Priority</label>
               <Select
                 value={issue.priority}
                 onValueChange={(value) =>
                   updateIssue.mutate({ id: issue.id, data: { priority: value as IssuePriority } })
-                }
-              >
+                } >
                 <SelectTrigger className="h-8">
                   <SelectValue />
                 </SelectTrigger>
@@ -161,7 +151,6 @@ export default function IssueDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Assignee</label>
               <Select
@@ -170,8 +159,7 @@ export default function IssueDetailPage() {
                   const user =
                     value === 'unassigned' ? null : users.find((u) => u.id === value) ?? null;
                   updateIssue.mutate({ id: issue.id, data: { assignee: user } });
-                }}
-              >
+                }}>
                 <SelectTrigger className="h-8">
                   <SelectValue placeholder="Unassigned" />
                 </SelectTrigger>
@@ -185,7 +173,6 @@ export default function IssueDetailPage() {
                 </SelectContent>
               </Select>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Labels</label>
               <div className="flex flex-wrap gap-1">
@@ -199,7 +186,6 @@ export default function IssueDetailPage() {
                 )}
               </div>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Reporter</label>
               <div className="flex items-center gap-2">
@@ -209,12 +195,10 @@ export default function IssueDetailPage() {
                 <span className="text-sm">{issue.reporter.name}</span>
               </div>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Created</label>
               <span className="text-sm">{format(new Date(issue.createdAt), 'MMM d, yyyy')}</span>
             </div>
-
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Updated</label>
               <span className="text-sm">{format(new Date(issue.updatedAt), 'MMM d, yyyy')}</span>
