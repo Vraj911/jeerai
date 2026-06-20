@@ -32,11 +32,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/auth/**", "/health").permitAll()
-                    .requestMatchers("/api/invitations/validate", "/api/invite/validate").permitAll()
-                        .requestMatchers("/api/**").authenticated()
-                        .anyRequest().denyAll())
+    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+    .requestMatchers("/auth/**", "/health").permitAll()
+    .requestMatchers("/api/invitations/validate", "/api/invite/validate").permitAll()
+    .requestMatchers("/workspaces/**").authenticated()
+    .requestMatchers("/notifications/**").authenticated()
+    .requestMatchers("/api/**").authenticated()
+    .anyRequest().authenticated()
+)
                 .addFilterBefore(privateNetworkAccessFilter(), CorsFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();

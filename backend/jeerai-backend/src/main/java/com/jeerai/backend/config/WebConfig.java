@@ -17,6 +17,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registerCorsMapping(registry, "/api/**");
         registerCorsMapping(registry, "/auth/**");
+        registerCorsMapping(registry, "/notifications/**");
+        registerCorsMapping(registry, "/workspaces/**");
     }
     private void registerCorsMapping(CorsRegistry registry, String pathPattern) {
         registry.addMapping(pathPattern)
